@@ -109,6 +109,9 @@ def attach_original_text(msgs, raw):
             continue
         nxt = [p for p in pos[idx + 1:] if p != -1 and p > start]
         end = nxt[0] if nxt else len(raw)
+        gap = raw.rfind(chr(10) * 2, start, end)          # the next message's header lines belong to the next message
+        if nxt and gap > start:
+            end = gap
         m["text"] = raw[start:end].strip()
     if len(msgs) == 1 and pos[0] == -1:
         msgs[0]["text"] = raw.strip()

@@ -59,6 +59,7 @@ function load(state, source) {
   $("empty").classList.add("hidden");
   showTab(document.querySelector("#tabs button.active").dataset.tab);
   render();
+  if (!window.__queryDone) { window.__queryDone = true; applyQuery(); }
 }
 $("fileInput").addEventListener("change", (e) => readFile(e.target.files[0]));
 const dz = $("dropzone");
@@ -486,3 +487,19 @@ $("attention").addEventListener("click", (e) => {
 });
 
 initPipelineControls();
+
+// Deep links, used for documentation screenshots: ?tab=trace&lang=ur&theme=dark&open=menu|email|details&trace=all
+function applyQuery() {
+  const q = new URLSearchParams(location.search);
+  if (q.get("lang") === "ur" || q.get("lang") === "en") { setUiLang(q.get("lang")); refreshLang(); }
+  if (q.get("theme")) setTheme(q.get("theme"));
+  if (q.get("trace") === "all" && STATE && pipeRuns(STATE).length) {      // show the finished trace instead of playing it
+    const runs = pipeRuns(STATE); TP.run = runs[runs.length - 1];
+    TP.playedKey = TP.run + ":" + runSteps(STATE, TP.run).length + ":" + (STATE.updated || ""); TP.pending = false;
+  }
+  if (q.get("tab")) showTab(q.get("tab"));
+  if (q.get("trace") === "all" && STATE) renderPipeline(STATE);
+  if (q.get("open") === "details") $("moreDetails").open = true;
+  if (q.get("open") === "menu") setMenu(true);
+  if (q.get("open") === "email") setEmail(true);
+}

@@ -207,7 +207,7 @@ def apply_statuses(state, status, facts, run_no, old_status):
             if st != prev and st in ("rejected", "stale", "needs_review"):
                 kind = {"rejected": "reject", "stale": "stale", "needs_review": "review"}[st]
                 state["events"].append({"run": run_no, "kind": kind,
-                                        "text": f"Message #{m['n']} ({m.get('sender')}) {f.get('key')}: {why}"})
+                                        "text": f"Message #{m['n']} ({m.get('sender')}) {f.get('key') or f.get('name') or f.get('item') or f.get('field') or f.get('type')}: {why}"})
             if st == "rejected":
                 rejected.append({"n": m["n"], "sender": m.get("sender"), "text": m.get("text"),
                                  "fact_key": f.get("key"), "reason": why})

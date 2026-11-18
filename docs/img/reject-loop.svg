@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 310" width="900" height="310" font-family="Segoe UI, Arial, sans-serif">
+  <title>The reject loop: a wrong message cannot break the plan</title>
+  <desc>The planner builds a plan, the validator finds a failing check, the rejector removes the newest lower-authority fact, the planner runs again, and every check passes.</desc>
+  <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#7d8a80"/></marker></defs>
+  <rect width="900" height="310" rx="22" fill="#f3f7f3"/>
+  <text x="450" y="30" text-anchor="middle" font-size="17" font-weight="700" fill="#1b231d">The reject loop</text>
+  <text x="450" y="47" text-anchor="middle" font-size="11.5" fill="#5b6a5f">a plausible but wrong message is removed, the plan stays valid, and the reason is logged</text>
+  <g stroke="#7d8a80" stroke-width="2" fill="none" marker-end="url(#a)">
+    <line x1="150" y1="94" x2="228" y2="94"/><line x1="350" y1="94" x2="428" y2="94"/>
+    <line x1="550" y1="94" x2="678" y2="94"/>
+    <line x1="490" y1="128" x2="490" y2="198" stroke="#ef6b5e"/>
+    <path d="M430 232 L290 232 L290 128" stroke="#ef6b5e"/>
+  </g>
+  <rect x="30" y="62" width="120" height="64" rx="14" fill="#ffffff" stroke="#7d8a80" stroke-width="2"><animate attributeName="fill" dur="12s" repeatCount="indefinite" keyTimes="0;-0.0199;0.0001;0.0701;0.1001;1" values="#ffffff;#ffffff;#ffffff;#ffffff;#ffffff;#ffffff"/></rect>
+  <text x="90.0" y="90" text-anchor="middle" font-size="15" font-weight="700" fill="#1b231d">Facts</text>
+  <text x="90.0" y="109" text-anchor="middle" font-size="11" fill="#5b6a5f">from all messages</text>
+  <rect x="230" y="62" width="120" height="64" rx="14" fill="#ffffff" stroke="#5cc777" stroke-width="2"><animate attributeName="fill" dur="12s" repeatCount="indefinite" keyTimes="0;0.128;0.148;0.218;0.248;0.628;0.648;0.718;0.748;1" values="#ffffff;#ffffff;#dff3e4;#dff3e4;#ffffff;#ffffff;#dff3e4;#dff3e4;#ffffff;#ffffff"/></rect>
+  <text x="290.0" y="90" text-anchor="middle" font-size="15" font-weight="700" fill="#1b231d">Planner</text>
+  <text x="290.0" y="109" text-anchor="middle" font-size="11" fill="#5b6a5f">every venue x food</text>
+  <rect x="430" y="62" width="120" height="64" rx="14" fill="#ffffff" stroke="#5cc777" stroke-width="2"><animate attributeName="fill" dur="12s" repeatCount="indefinite" keyTimes="0;0.276;0.296;0.366;0.396;0.776;0.796;0.866;0.896;1" values="#ffffff;#ffffff;#fbdcd8;#fbdcd8;#ffffff;#ffffff;#dff3e4;#dff3e4;#ffffff;#ffffff"/></rect>
+  <text x="490.0" y="90" text-anchor="middle" font-size="15" font-weight="700" fill="#1b231d">Validator</text>
+  <text x="490.0" y="109" text-anchor="middle" font-size="11" fill="#5b6a5f">all checks</text>
+  <rect x="680" y="56" width="170" height="76" rx="14" fill="#ffffff" stroke="#1b231d" stroke-width="2"><animate attributeName="fill" dur="12s" repeatCount="indefinite" keyTimes="0;0.94;0.96;1.03;1.06;1" values="#ffffff;#ffffff;#dff3e4;#dff3e4;#ffffff;#ffffff"/></rect>
+  <text x="765.0" y="84" text-anchor="middle" font-size="15" font-weight="700" fill="#1b231d">Valid plan</text>
+  <text x="765.0" y="103" text-anchor="middle" font-size="11" fill="#5b6a5f">every check passes</text>
+  <rect x="430" y="200" width="120" height="64" rx="14" fill="#ffffff" stroke="#ef6b5e" stroke-width="2"><animate attributeName="fill" dur="12s" repeatCount="indefinite" keyTimes="0;0.378;0.398;0.468;0.498;1" values="#ffffff;#ffffff;#fbdcd8;#fbdcd8;#ffffff;#ffffff"/></rect>
+  <text x="490.0" y="228" text-anchor="middle" font-size="15" font-weight="700" fill="#1b231d">Rejector</text>
+  <text x="490.0" y="247" text-anchor="middle" font-size="11" fill="#5b6a5f">newest, lowest rank</text>
+  <text x="500" y="168" text-anchor="start" font-size="12.5" font-weight="700" fill="#c0392b" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" keyTimes="0;0.3;0.33;0.42;0.45;1" values="0;0;1;1;0;0"/>a check fails</text>
+  <text x="360" y="252" text-anchor="end" font-size="12.5" font-weight="700" fill="#c0392b" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" keyTimes="0;0.42;0.45;0.66;0.69;1" values="0;0;1;1;0;0"/>re-plan without that fact</text>
+  <text x="615" y="84" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2f9e55" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" keyTimes="0;0.8;0.83;0.98;1.01;1" values="0;0;1;1;0;0"/>all pass</text>
+  <text x="450" y="292" text-anchor="middle" font-size="11" font-weight="700" fill="#7a3a33" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" keyTimes="0;0.42;0.45;0.7;0.73;1" values="0;0;1;1;0;0"/>rejected fact + the exact failing rule go to the trace and the Rejected tab</text>
+  <circle r="11" fill="#5cc777" stroke="#ffffff" stroke-width="3">
+    <animateMotion dur="12s" repeatCount="indefinite" path="M90,94 L290,94 L490,94 L490,232 L290,232 L290,94 L490,94 L765,94" keyTimes="0;1" calcMode="linear"/>
+    <animate attributeName="fill" dur="12s" repeatCount="indefinite" keyTimes="0;0.29;0.31;0.65;0.67;1" values="#5cc777;#5cc777;#ef6b5e;#ef6b5e;#5cc777;#5cc777"/>
+  </circle>
+</svg>

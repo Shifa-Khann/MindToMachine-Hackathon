@@ -36,3 +36,12 @@ class UnavailableTests(unittest.TestCase):
     def test_unavailable_option_asks_nothing(self):
         m = {"facts": [{"type": "venue", "name": "invented hall", "available": False}]}
         self.assertEqual(reading.follow_ups(m), [])
+
+
+class OriginalTextTests(unittest.TestCase):
+    def test_next_message_header_is_not_part_of_previous_text(self):
+        raw = "first sender header\nalpha beta gamma delta\n\nsecond sender header\nepsilon zeta eta theta\n"
+        msgs = [{"quote": "alpha beta gamma"}, {"quote": "epsilon zeta eta"}]
+        out = reading.attach_original_text(msgs, raw)
+        self.assertEqual(out[0]["text"], "alpha beta gamma delta")
+        self.assertEqual(out[1]["text"], "epsilon zeta eta theta")

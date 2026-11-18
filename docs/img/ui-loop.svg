@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 230" width="960" height="230" font-family="Segoe UI, Arial, sans-serif">
+  <title>UI render loop</title>
+  <desc>The page polls state.json, loads it when it changed, renders every part and lights up the pages.</desc>
+  <defs><marker id="u" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#7d8a80"/></marker></defs>
+  <rect width="960" height="230" rx="22" fill="#f3f7f3"/>
+  <text x="480" y="30" text-anchor="middle" font-size="17" font-weight="700" fill="#1b231d">UI render loop (no build step, no framework)</text>
+  <rect x="40" y="90" width="160" height="64" rx="14" fill="#ffffff" stroke="#b26a00" stroke-width="2.5"><animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0;0.06;0.08;0.18;0.21;1" values="#ffffff;#ffffff;#dff3e4;#dff3e4;#ffffff;#ffffff"/></rect>
+  <text x="120.0" y="127" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1b231d">state.json</text>
+  <line x1="204" y1="122" x2="204" y2="122" stroke="#7d8a80" stroke-width="2" marker-end="url(#u)"/>
+  <rect x="210" y="90" width="160" height="64" rx="14" fill="#ffffff" stroke="#7d8a80" stroke-width="2.5"><animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0;0.23;0.25;0.35;0.38;1" values="#ffffff;#ffffff;#dff3e4;#dff3e4;#ffffff;#ffffff"/></rect>
+  <text x="290.0" y="127" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1b231d">poll every 3 s</text>
+  <line x1="374" y1="122" x2="374" y2="122" stroke="#7d8a80" stroke-width="2" marker-end="url(#u)"/>
+  <rect x="380" y="90" width="160" height="64" rx="14" fill="#ffffff" stroke="#3b78c4" stroke-width="2.5"><animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0;0.4;0.42;0.52;0.55;1" values="#ffffff;#ffffff;#dff3e4;#dff3e4;#ffffff;#ffffff"/></rect>
+  <text x="460.0" y="127" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1b231d">load(state)</text>
+  <line x1="544" y1="122" x2="544" y2="122" stroke="#7d8a80" stroke-width="2" marker-end="url(#u)"/>
+  <rect x="550" y="90" width="160" height="64" rx="14" fill="#ffffff" stroke="#2f9e55" stroke-width="2.5"><animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0;0.57;0.59;0.69;0.72;1" values="#ffffff;#ffffff;#dff3e4;#dff3e4;#ffffff;#ffffff"/></rect>
+  <text x="630.0" y="127" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1b231d">render()</text>
+  <line x1="714" y1="122" x2="714" y2="122" stroke="#7d8a80" stroke-width="2" marker-end="url(#u)"/>
+  <rect x="720" y="90" width="200" height="64" rx="14" fill="#ffffff" stroke="#5b5bd6" stroke-width="2.5"><animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0;0.74;0.76;0.86;0.89;1" values="#ffffff;#ffffff;#dff3e4;#dff3e4;#ffffff;#ffffff"/></rect>
+  <text x="820.0" y="127" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1b231d">Plan / Trace / Messages</text>
+  <circle r="9" fill="#5cc777" stroke="#fff" stroke-width="3"><animateMotion dur="10s" repeatCount="indefinite" path="M120,122 L820,122" keyTimes="0;1" calcMode="linear"/></circle>
+  <text x="480" y="190" text-anchor="middle" font-size="12" fill="#5b6a5f">a change in state.json (new run) becomes new cards, a new strip, a new trace and a new briefing, all from the same file</text>
+</svg>
