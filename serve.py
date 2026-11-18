@@ -36,6 +36,10 @@ class Handler(SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store")     # always serve the current UI files, never a cached older page
+        super().end_headers()
+
     def do_GET(self):
         if self.path.startswith("/state.json"):
             f = OUT / "state.json"
