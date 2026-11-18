@@ -140,12 +140,19 @@ function showResult() {
   if (!run) { card.classList.add("hidden"); return; }
   const msgs = (STATE.messages || []).filter(m => (run.new_messages || []).includes(m.n));
   const changed = (run.changed_areas || []).map(a => t("chart." + a) !== "chart." + a ? t("chart." + a) : a).join(", ");
-  const asks = msgs.flatMap(m => (m.ask || []).map(q => ({q, n: m.n})));
+  const GENERIC = [t("res.g1"), t("res.g2"), t("res.g3")];
+  const seen = !msgs.length && !run.calls;                       // same text sent again: nothing new was read
+  // a message that gave the planner nothing to use gets the general questions, unless it already carries specific ones
+  const thin = msgs.some(m => m.status === "irrelevant" && !(m.ask || []).length);
+  const asks = msgs.flatMap(m => ((m.ask || []).length ? m.ask : (m.status === "irrelevant" ? GENERIC : [])).map(q => ({q, n: m.n})));
+  if (seen || (!msgs.length && !run.calls)) GENERIC.forEach(q => asks.push({q, n: 0}));
+  const notice = seen ? t("res.seen") : (thin || asks.length ? t("res.notenough") : "");
   card.innerHTML = `<h3>${t("res.title")}</h3>
     <div class="muted small">${t("res.meta", {n: run.run, c: run.calls, k: run.tokens?.total ?? 0})}</div>
     ${msgs.length ? msgs.map(m => `<div class="resmsg"><div class="row">${langBadge(m.lang)}<span class="badge b-${esc(m.status)}">${esc(STATUS_COLOR[m.status] ? statusLabel(m.status) : m.status)}</span><b>${esc(title(m.sender))}</b></div>
         <div class="gist" dir="ltr">${esc(m.gist)}</div><div class="small">→ ${esc(m.reason || "")}</div></div>`).join("")
-      : `<p class="bad">${t("res.noread")}</p>`}
+      : (seen ? "" : `<p class="bad">${t("res.noread")}</p>`)}
+    ${notice ? `<p class="warn"><b>⚠ ${notice}</b></p>` : ""}
     <p class="${changed ? "ok" : "muted"}"><b>${changed ? t("res.changed", {a: esc(changed)}) : t("res.nochange")}</b></p>
     ${asks.length ? `<div class="asks"><h3>${t("res.questions")}</h3>${asks.map((x, i) => `<div class="ask"><label>${esc(x.q)}<input type="text" data-q="${i}" placeholder="${t("res.answer")}"></label><button class="btn btn-dark" data-send="${i}">${t("res.send")}</button></div>`).join("")}</div>` : ""}`;
   card.classList.remove("hidden");
