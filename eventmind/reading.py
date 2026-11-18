@@ -1,10 +1,26 @@
 """The ONLY place where language is understood. One model call turns raw messages in any
 language into a fixed English JSON schema. Everything after this is plain code."""
+import re
+
 from .llm import parse_json
+
+_LANG = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z]{2,4})?$")
+
+
+def clean_lang(value):
+    """Normalise the model's language tag; anything unusable becomes 'und' (undetermined)."""
+    v = str(value or "").strip().replace("_", "-")
+    if v.lower() == "mixed":
+        return "mixed"
+    if _LANG.match(v):
+        head, _, tail = v.partition("-")
+        return head.lower() + ("-" + tail.capitalize() if tail else "")
+    return "und"
 
 SYSTEM = """You extract event-planning facts from messages (emails, chats, notices) for ONE event.
 Messages can be in ANY language or script, mixed, informal, with typos. Split the text into separate messages, in order.
-Return ONLY JSON: {"messages":[{"sender":str,"role":ROLE,"date":"YYYY-MM-DD"|null,"quote":"first 6 words of the message, verbatim","gist":"<=12 English words","flags":[FLAG...],"facts":[FACT...]}]}
+Return ONLY JSON: {"messages":[{"sender":str,"role":ROLE,"date":"YYYY-MM-DD"|null,"lang":LANG,"quote":"first 6 words of the message, verbatim","gist":"<=12 English words","flags":[FLAG...],"facts":[FACT...]}]}
+LANG: ISO 639-1 code of the message language (en, ur, hi, ar...); Roman-script Urdu or Hindi = "ur-Latn" / "hi-Latn"; several languages in one message = "mixed".
 ROLE: approver (gives official approval/budget/rules for the event) | venue | caterer | judging | finance | vendor | participant | other
 FLAG: "legal" (contract terms, legal threat, lawsuit) | "disputed" (contests or doubts another fact) | "privacy" (personal data: health, home address, IDs). Usually [].
 date: if the year is missing, use the year of other messages.

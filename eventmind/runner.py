@@ -99,6 +99,7 @@ def run(path):
         for m in msgs:
             m["n"] = len(state["messages"]) + 1
             m["run"] = run_no
+            m["lang"] = reading.clean_lang(m.get("lang"))
             m["flags"] = [f for f in (m.get("flags") or []) if f in ("legal", "disputed", "privacy")]
             if "privacy" in m["flags"]:
                 state["privacy"].append(f"Message #{m['n']} contains personal data - used only for planning facts.")

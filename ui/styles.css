@@ -1,6 +1,6 @@
 /* EventMind — soft card dashboard, light + dark */
 :root, [data-theme="light"]{
-  --page:#dfe9df; --page2:#eef3ee; --frame:#eef1ed; --card:#f7f8f6; --card2:#ffffff;
+  --page:#cfe8d3; --page2:#eef4ee; --frame:rgba(240,244,240,.78); --card:rgba(248,250,247,.9); --card2:#ffffff;
   --line:#e2e7e1; --text:#1b231d; --muted:#7d8a80; --shadow:0 1px 2px rgba(20,40,25,.05),0 8px 24px rgba(20,40,25,.06);
   --green:#5cc777; --green-soft:#d9f2df; --purple:#8c8cf5; --peach:#eaae8c; --yellow:#fbd535; --red:#ef6b5e; --blue:#6aa8f0;
   --hatch:#cdd5cd; --hatch-bg:#eef1ed; --dark-btn:#1b231d; --dark-btn-text:#fff;
@@ -13,7 +13,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
-body{background:linear-gradient(135deg,var(--page),var(--page2));color:var(--text);
+body{background:radial-gradient(900px 500px at 0% 0%,var(--page) 0,transparent 70%),radial-gradient(700px 500px at 100% 100%,var(--page) 0,transparent 70%),var(--page2);background-attachment:fixed;color:var(--text);
   font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Nastaliq Urdu",sans-serif;
   font-size:14px;line-height:1.45;padding:22px;transition:background .25s,color .25s}
 code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82em}
@@ -25,7 +25,7 @@ h1{font-size:1.15rem;margin:0;font-weight:650} h2{font-size:1.1rem;margin:0;font
 h3{font-size:.95rem;margin:0 0 12px;font-weight:600}
 
 /* frame */
-.frame{display:flex;gap:18px;max-width:1440px;margin:auto;background:var(--frame);border-radius:28px;padding:18px;box-shadow:var(--shadow);border:1px solid var(--line)}
+.frame{display:flex;gap:18px;max-width:1440px;margin:auto;background:var(--frame);border-radius:28px;padding:18px;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.7);backdrop-filter:blur(14px)}
 .sidebar{width:62px;flex:none;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:6px;position:sticky;top:22px;height:calc(100vh - 80px)}
 .logo{margin-bottom:18px}
 .side-nav{display:flex;flex-direction:column;gap:12px}
@@ -185,3 +185,22 @@ textarea{width:100%;margin:6px 0 10px;resize:vertical}
 .dropzone{margin:22px auto 0;max-width:420px;border:2px dashed var(--hatch);border-radius:16px;padding:40px;color:var(--muted)}
 .dropzone.over{border-color:var(--green);color:var(--text)}
 .foot{text-align:center;padding:10px 0 2px}
+
+/* language: badge, card, UI switch, Urdu (RTL) mode */
+.b-lang{background:color-mix(in srgb,var(--blue) 16%,transparent);color:var(--blue);text-transform:uppercase;letter-spacing:.03em}
+.langrow{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:.84rem}
+.langrow .lname{flex:0 0 auto;min-width:84px}
+.langrow .lbar{flex:1;height:8px;border-radius:99px;background:var(--frame);overflow:hidden}
+.langrow .lbar i{display:block;height:100%;border-radius:99px;background:var(--blue)}
+.langswitch{display:inline-flex;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.langswitch button{border:0;background:none;color:var(--muted);font:inherit;font-size:.82rem;padding:5px 11px;border-radius:7px;cursor:pointer}
+.langswitch button.active{background:var(--green-soft);color:var(--text);font-weight:600}
+.langswitch button[lang="ur"]{font-family:"Noto Nastaliq Urdu","Jameel Noori Nastaleeq","Noto Naskh Arabic",serif;line-height:1.7}
+html[lang="ur"] body{font-family:"Noto Nastaliq Urdu","Jameel Noori Nastaleeq","Noto Naskh Arabic",Tahoma,serif;line-height:1.95}
+html[lang="ur"] code,html[lang="ur"] pre,html[lang="ur"] .barchart,html[lang="ur"] .timeline,html[lang="ur"] .minibars,html[lang="ur"] .stackbar,html[lang="ur"] .donut-wrap,html[lang="ur"] .gauge{direction:ltr}
+html[lang="ur"] .stepper li::before{left:6px;right:24px}
+html[dir="rtl"] th,html[dir="rtl"] td{text-align:right}
+html[dir="rtl"] td.num,html[dir="rtl"] th.num{text-align:left}
+html[dir="rtl"] .msg{border-left:1px solid var(--line);border-right:5px solid var(--line)}
+html[dir="rtl"] .msg.s-used{border-right-color:var(--green)}html[dir="rtl"] .msg.s-stale{border-right-color:var(--hatch)}html[dir="rtl"] .msg.s-rejected{border-right-color:var(--red)}
+html[dir="rtl"] .msg.s-irrelevant{border-right-color:var(--blue)}html[dir="rtl"] .msg.s-optional{border-right-color:var(--yellow)}html[dir="rtl"] .msg.s-needs_review{border-right-color:var(--purple)}
