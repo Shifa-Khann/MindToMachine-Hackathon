@@ -141,6 +141,11 @@
         <h3 data-i18n="msg.add">Add a new message</h3>
         <p class="muted small" data-i18n="msg.hint">Runs the same command as every other message (needs python serve.py). Any language.</p>
         <textarea id="newMsg" rows="3" data-i18n-ph="msg.placeholder" placeholder="Paste a new message…"></textarea>
+        <div class="attach-row">
+          <label class="btn"><svg viewBox="0 0 24 24"><path d="M20 11.5l-8 8a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg><span data-i18n="msg.attach">Attach email or document</span><input id="attachInput" type="file" multiple accept=".eml,.txt,.md,.csv,.json,.docx,.pdf" hidden></label>
+          <span class="muted small" data-i18n="msg.attachhint">Email (.eml), Word, PDF or text — up to 10 MB each</span>
+        </div>
+        <div id="attachList" class="chips"></div>
         <div class="row"><button id="sendMsg" class="btn btn-dark" data-i18n="btn.process">Process message</button><span id="sendStatus" class="muted small"></span></div>
       </div>
       <div class="legend" id="legend"></div>

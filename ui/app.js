@@ -80,14 +80,35 @@ poll(); setInterval(poll, 3000);
 
 $("downloadBtn").onclick = () => { if (!STATE) { alert(t("xl.nodata")); return; } downloadExcel(STATE, title); };
 
+// ---------- attachments (email / document) ----------
+const ATTACH_OK = [".eml", ".txt", ".md", ".csv", ".json", ".docx", ".pdf"], ATTACH_MAX = 10 * 1024 * 1024;
+let ATTACH = [];
+function addAttachments(list) {
+  for (const f of list) {
+    const ext = (f.name.match(/\.[^.]+$/) || [""])[0].toLowerCase();
+    if (!ATTACH_OK.includes(ext) || f.size > ATTACH_MAX || !f.size) { $("sendStatus").textContent = t("msg.badfile", {n: f.name}); continue; }
+    ATTACH.push(f);
+  }
+  drawAttach();
+}
+function drawAttach() {
+  $("attachList").innerHTML = ATTACH.map((f, i) => `<span class="chip">${esc(f.name)} <button class="x" data-i="${i}" aria-label="remove">×</button></span>`).join("");
+}
+$("attachList").addEventListener("click", (e) => { const b = e.target.closest("button.x"); if (b) { ATTACH.splice(+b.dataset.i, 1); drawAttach(); } });
+$("attachInput").addEventListener("change", (e) => { addAttachments(e.target.files); e.target.value = ""; });
+const addCard = $("addCard");
+["dragover", "dragenter", "drop"].forEach(ev => addCard.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); if (ev === "drop") addAttachments(e.dataTransfer.files); }));
+const toB64 = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res({name: f.name, b64: String(r.result).split(",")[1] || ""}); r.onerror = rej; r.readAsDataURL(f); });
+
 $("sendMsg").addEventListener("click", async () => {
-  const text = $("newMsg").value.trim(); if (!text) return;
+  const text = $("newMsg").value.trim(); if (!text && !ATTACH.length) return;
   $("sendMsg").disabled = true; $("sendStatus").textContent = t("msg.processing");
   try {
-    const res = await fetch("/api/message", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({text})});
+    const files = await Promise.all(ATTACH.map(toB64));
+    const res = await fetch("/api/message", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({text, files})});
     const out = await res.json();
     $("sendStatus").textContent = out.ok ? t("msg.done") : t("msg.error", {e: out.error || "see terminal"});
-    if (out.ok) $("newMsg").value = "";
+    if (out.ok) { $("newMsg").value = ""; ATTACH = []; drawAttach(); }
     lastUpdated = null; await poll();
   } catch (_) { $("sendStatus").textContent = t("msg.nobackend"); }
   finally { $("sendMsg").disabled = false; }

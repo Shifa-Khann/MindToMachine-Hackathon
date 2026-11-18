@@ -204,3 +204,8 @@ html[dir="rtl"] td.num,html[dir="rtl"] th.num{text-align:left}
 html[dir="rtl"] .msg{border-left:1px solid var(--line);border-right:5px solid var(--line)}
 html[dir="rtl"] .msg.s-used{border-right-color:var(--green)}html[dir="rtl"] .msg.s-stale{border-right-color:var(--hatch)}html[dir="rtl"] .msg.s-rejected{border-right-color:var(--red)}
 html[dir="rtl"] .msg.s-irrelevant{border-right-color:var(--blue)}html[dir="rtl"] .msg.s-optional{border-right-color:var(--yellow)}html[dir="rtl"] .msg.s-needs_review{border-right-color:var(--purple)}
+
+.attach-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chips .chip{display:inline-flex;gap:6px;align-items:center;color:var(--text)}
+.chips .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:0}

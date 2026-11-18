@@ -17,6 +17,7 @@ Update this file and **push after every finished functionality** (see RULES.md).
 | 9b | UI redesign: soft-card dashboard, light + dark theme, stepper, hatched bar chart, donuts, gauge, mobile | ✅ done | ui commit |
 | 9c | Multi-language: `lang` per message (reading → runner), language badge + Languages card, UI switch English/اردو (RTL, `ui/i18n.js`), invented Urdu-script test | ✅ done | |
 | 9d | Offline Excel export (`ui/xlsx.js`, 10 sheets), "Open saved plan", display-time title case, `scripts/package.*`, ship.sh tracked-file check | ✅ done | |
+| 9e | Attach email/document to "Add message": .eml (stdlib reader), .docx, .pdf, .txt; served via /api/message, same command | ✅ done | |
 | 10 | Real model run on sample pack (< 2 min, JSON parses) | ⏳ todo | |
 | 11 | Multilingual test with `data/invented_multilingual_pack.txt` | ⏳ todo | |
 | 12 | Push to GitHub, add organizers if private | ⏳ todo (GitHub not linked yet) | |

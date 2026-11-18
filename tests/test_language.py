@@ -43,3 +43,13 @@ class LanguageTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EmailReadTests(unittest.TestCase):
+    def test_eml_body_and_headers(self):
+        from eventmind import ingest
+        head = ["From: Sender <s@example.org>", "Subject: invented", "Content-Type: text/plain; charset=utf-8", "", URDU]
+        raw = "\r\n".join(head).encode("utf-8")
+        out = ingest.read_eml(raw)
+        self.assertIn("Subject: invented", out)
+        self.assertIn(URDU, out)
