@@ -85,7 +85,11 @@ def flatten(messages):
             if not isinstance(f, dict) or not f.get("type"):
                 continue
             g = dict(f)
-            g.setdefault("key", f"{g['type']}:{g.get('field') or g.get('name') or g.get('item') or i}")
+            if g["type"] == "rule":              # the same kind of rule supersedes the older one; different rules never collide
+                default_key = f"rule:{g.get('area')}:{g.get('metric')}:{g.get('op')}"
+            else:                                 # no name at all -> unique to this message, never collides with another
+                default_key = f"{g['type']}:{g.get('field') or g.get('name') or g.get('item') or str(m['n']) + '.' + str(i)}"
+            g.setdefault("key", default_key)
             g["key"] = str(g["key"]).lower().strip()
             g.update(_id=f"{m['n']}.{i}", _n=m["n"], _run=m["run"], _date=m.get("date") or "",
                      _rank=rank, _role=m.get("role"))
@@ -157,7 +161,8 @@ def _collect(active):
             fld = str(f.get("field", "")).lower()
             jd[JUDGE_SYNONYMS.get(fld, fld)] = num(f.get("value"))
         elif t == "venue":
-            venues.append(f)
+            if f.get("available") is not False:       # "cannot be booked" -> not an option
+                venues.append(f)
         elif t == "food":
             foods.append(f)
         elif t == "expense":
@@ -167,7 +172,15 @@ def _collect(active):
         elif t == "quantity":
             qty.append(f)
         elif t == "rule":
-            rules.append(f)
+            m = str(f.get("metric") or "").lower()
+            if m in ("teams_per_judge", "max_teams_per_judge") and str(f.get("op")) in ("<=", "==") and num(f.get("value")):
+                jd.setdefault("max_teams", num(f.get("value")))      # a per-judge limit given as a rule is still a judging input
+            elif m in ("service_charge", "service_charge_pct", "service_charge_percent") and num(f.get("value")) is not None:
+                ev["service_charge_pct"] = num(f.get("value"))        # extra % on the food total
+            elif m in ("duration_per_team", "minutes_per_team", "min_per_team") and num(f.get("value")):
+                jd.setdefault("min_per_team", num(f.get("value")))
+            else:
+                rules.append(f)
     return ev, jd, venues, foods, expenses, breaks, qty, rules
 
 
@@ -284,7 +297,8 @@ def build_plan(active, model_rule_results=None):
                 continue
             boxes = int(food_qty if food_qty is not None else headcount)
             pph = num(fo.get("price_per_head")) if fo else None
-            food_cost = (boxes * (pph or 0) + (num(fo.get("delivery_fee")) or 0)) if fo else 0
+            svc = (num(fo.get("service_charge_pct")) if fo else None) or ev.get("service_charge_pct") or 0
+            food_cost = round((boxes * (pph or 0) * (1 + svc / 100)) + (num(fo.get("delivery_fee")) or 0)) if fo else 0
             vprice = num(v.get("price")) if v else None
             judges_cost = used * fee
             total = committed_total + (vprice or 0) + food_cost + judges_cost
@@ -329,7 +343,7 @@ def build_plan(active, model_rule_results=None):
         "venue": {"name": v.get("name") if v else None, "capacity": num(v.get("capacity")) if v else None,
                   "price": vprice, "features": (v.get("features") or []) if v else [],
                   "options": [{"name": o.get("name"), "capacity": num(o.get("capacity")), "price": num(o.get("price")),
-                               "chosen": o is v, "note": opt_note(o, "venue")} for o in venues]},
+                               "chosen": o is v, "features": o.get("features") or [], "note": opt_note(o, "venue")} for o in venues]},
         "food": {"name": fo.get("name") if fo else None, "tier": fo.get("tier") if fo else None,
                  "price_per_head": pph, "boxes": boxes, "cost": food_cost,
                  "options": [{"name": o.get("name"), "price_per_head": num(o.get("price_per_head")),
@@ -378,7 +392,10 @@ def validate(ctx, v, fo, budget, duration, confirmed, needed, max_t, mpt, judgin
             blk["minutes"] if blk else "missing")
     for r in rules:
         res = eval_rule(r, ctx)
-        if res is None:
+        if r.get("metric") == "venue_features" and r["_id"] in model_rule_results and model_rule_results.get("_venue_allowed"):
+            res = True            # the model named the venues that satisfy it; candidates are already limited to those
+            how = "checked by model"
+        elif res is None:
             res = model_rule_results.get(r["_id"], {}).get("ok")
             how = "checked by model" if res is not None else "could not be checked"
         else:
@@ -430,7 +447,13 @@ def plan_with_rejections(messages, prior_rejects, model_rule_results):
 
 def unknown_rules(messages):
     active, _, _ = resolve(messages, {})
-    return [f for f in active if f["type"] == "rule" and f.get("metric") not in KNOWN_METRICS]
+    out = [f for f in active if f["type"] == "rule" and f.get("metric") not in KNOWN_METRICS]
+    venues = [f for f in active if f["type"] == "venue" and f.get("available") is not False]
+    for f in active:       # a feature requirement worded differently from every venue's feature tags needs the model's judgement
+        if f["type"] == "rule" and f.get("metric") == "venue_features" and venues and not any(
+                str(f.get("value")).lower() in " ".join(v.get("features") or []).lower() for v in venues):
+            out.append(f)
+    return out
 
 
 def area_sections(plan):

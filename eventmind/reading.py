@@ -22,7 +22,7 @@ def follow_ups(m):
     """Questions to ask about one message: the model's own (max 2) plus any required number that is missing."""
     qs = [str(q).strip() for q in (m.get("ask") or []) if isinstance(q, (str,)) and str(q).strip()][:2]
     for f in m.get("facts") or []:
-        if not isinstance(f, dict):
+        if not isinstance(f, dict) or f.get("available") is False:   # an unavailable option needs no price
             continue
         what = f.get("name") or f.get("item") or f.get("field") or f.get("key") or f.get("type")
         for field, label in REQUIRED.get(f.get("type"), []):
@@ -48,14 +48,14 @@ Messages can be in ANY language or script, mixed, informal, with typos. Split th
 Return ONLY JSON: {"messages":[{"sender":str,"role":ROLE,"date":"YYYY-MM-DD"|null,"lang":LANG,"quote":"first 6 words of the message, verbatim","gist":"<=12 English words","ask":[QUESTION...],"flags":[FLAG...],"facts":[FACT...]}]}
 QUESTION: <=2 short English questions for the sender, ONLY if the message is about the event but a number or detail needed to plan it is missing or unclear (price, headcount, date, amount, time). Otherwise [].
 LANG: ISO 639-1 code of the message language (en, ur, hi, ar...); Roman-script Urdu or Hindi = "ur-Latn" / "hi-Latn"; several languages in one message = "mixed".
-ROLE: approver (gives official approval/budget/rules for the event) | venue | caterer | judging | finance | vendor | participant | other
+ROLE: approver (an institutional office, department or administration speaking officially: approvals, budget, rules, accessibility or safety requirements; only individual attendees or students asking for things are "participant") | venue | caterer | judging | finance | vendor | participant | other
 FLAG: "legal" (contract terms, legal threat, lawsuit) | "disputed" (contests or doubts another fact) | "privacy" (personal data: health, home address, IDs). Usually [].
 date: if the year is missing, use the year of other messages.
 Numbers: always plain numbers (convert words, local digits, lakh=100000, k=1000, "4 hours"=240 minutes). Text values in English, lowercase.
 FACT types (one object per fact, always with "key" and "type"):
  {"type":"event","field":"students|team_size|teams|duration_min|budget|staff|other_people|start_time","value":n}
  {"type":"venue","name":s,"capacity":n,"price":n,"features":[s]}
- {"type":"food","name":s,"tier":"standard|basic|premium|other","price_per_head":n,"delivery_fee":n}
+ {"type":"food","name":s,"tier":"standard|basic|premium|other","price_per_head":n,"delivery_fee":n,"service_charge_pct":n}
  {"type":"judges","field":"confirmed|fee_each|min_per_team|max_teams","value":n}
  {"type":"expense","item":s,"amount":n}          already ordered/paid from the event budget
  {"type":"optional","item":s,"amount":n}         a request or suggestion, not approved
@@ -63,6 +63,7 @@ FACT types (one object per fact, always with "key" and "type"):
  {"type":"quantity","area":"food|venue|judging|schedule|budget","item":s,"value":n}  a count someone says they ordered/booked/changed
  {"type":"rule","area":"venue|schedule|food|judging|budget","metric":M,"op":"<=|>=|==|requires|excludes","value":n|s,"text":"rule in English"}
    M: headcount|venue_capacity|venue_price|venue_features|food_price_per_head|food_boxes|total_cost|remaining_budget|judges|teams_per_judge|duration_min|start_time|end_time|teams|students|other
+Rules for facts: list EVERY option mentioned (every venue and every food item), never drop one. Venue "features": short lowercase tags for what the venue offers; a rule with metric venue_features must use one of those exact tags as its value. A venue that cannot be booked: {"type":"venue","name":s,"available":false}. How many teams one judge can cover = judges field max_teams; minutes one judge needs per team = judges field min_per_team (use these fields, not rules).
 key: short stable id "<type>:<thing>", e.g. "venue:hall x", "food:standard", "expense:printing", "event:budget", "judges:fee_each", "break:prayer". Same thing = same key.
 Messages with nothing for planning (greetings, delays, chit-chat) get "facts":[]. Do not invent facts."""
 

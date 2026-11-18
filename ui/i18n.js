@@ -5,6 +5,9 @@
 const I18N = {
   en: {
     "lang.name": "English",
+    "more.title": "More details: summary, charts, checks, languages, tokens", "compare": "Compare options",
+    "k.people": "People on site", "k.teams": "Teams", "k.meals": "Meals", "k.status": "Plan status",
+    "strip.title": "Just processed (run {n})", "strip.read": "{n} messages read", "strip.created": "Plan created from {n} messages",
     "br.h.latest": "Latest update (run {n})", "br.lu.msg": "Message #{n} from {s}: {g} — {st}.", "br.lu.none": "No change to the plan.", "br.lu.more": "…and {n} more changes.",
     "br.ov.msgs": "Built from {n} messages: {used} used, {stale} superseded, {rej} rejected, {opt} optional.",
     "f.people": "People on site", "f.venue": "Venue", "f.venue_seats": "Venue seats", "f.venue_price": "Venue price", "f.food": "Food option", "f.food_price": "Food price per head", "f.meals": "Meals", "f.food_cost": "Food cost",
@@ -68,6 +71,9 @@ const I18N = {
   },
   ur: {
     "lang.name": "اردو",
+    "more.title": "مزید تفصیل: خلاصہ، چارٹ، جانچ، زبانیں، ٹوکن", "compare": "انتخابات کا موازنہ",
+    "k.people": "مقام پر افراد", "k.teams": "ٹیمیں", "k.meals": "کھانے", "k.status": "پلان کی حالت",
+    "strip.title": "ابھی پروسیس ہوا (رن {n})", "strip.read": "{n} پیغامات پڑھے گئے", "strip.created": "{n} پیغامات سے پلان بنا",
     "br.h.latest": "تازہ ترین تبدیلی (رن {n})", "br.lu.msg": "{s} کا پیغام #{n}: {g} — {st}۔", "br.lu.none": "پلان میں کوئی تبدیلی نہیں۔", "br.lu.more": "…اور {n} مزید تبدیلیاں۔",
     "br.ov.msgs": "{n} پیغامات سے بنایا گیا: {used} استعمال شدہ، {stale} پرانے، {rej} مسترد، {opt} اختیاری۔",
     "f.people": "مقام پر افراد", "f.venue": "مقام", "f.venue_seats": "نشستیں", "f.venue_price": "مقام کی قیمت", "f.food": "کھانے کا انتخاب", "f.food_price": "فی کس کھانے کی قیمت", "f.meals": "کھانوں کی تعداد", "f.food_cost": "کھانے کی لاگت",

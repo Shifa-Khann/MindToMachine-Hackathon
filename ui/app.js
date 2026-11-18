@@ -2,7 +2,7 @@
 // Source: GET /state.json (live via serve.py) or a file the user loads/drops.
 "use strict";
 
-let STATE = null, LIVE = false, lastUpdated = null, CHART = "budget", TAB = "overview", SOURCE = "";
+let LAST_SENT = "", STATE = null, LIVE = false, lastUpdated = null, CHART = "budget", TAB = "overview", SOURCE = "";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -129,43 +129,9 @@ $("sendMsg").addEventListener("click", async () => {
     $("sendStatus").textContent = out.ok ? t("msg.done") : t("msg.error", {e: out.error || "see terminal"});
     if (out.ok) { $("newMsg").value = ""; ATTACH = []; drawAttach(); }
     lastUpdated = null; await poll();
-    if (out.ok) showResult(text);
+    if (out.ok) afterProcess(text);
   } catch (_) { $("sendStatus").textContent = t("msg.nobackend"); }
   finally { $("sendMsg").disabled = false; }
-});
-
-// ---------- result of the last processed message(s) + follow-up questions ----------
-function showResult(sent) {
-  const card = $("resultCard"), run = (STATE?.runs || []).slice(-1)[0];
-  if (!run) { card.classList.add("hidden"); return; }
-  let msgs = (STATE.messages || []).filter(m => (run.new_messages || []).includes(m.n));
-  // same text sent again: show what it did the first time (its status and its own questions) instead of nothing
-  const again = !msgs.length && !run.calls && sent ? (STATE.messages || []).filter(m => m.text && sent.includes(m.text.slice(0, 30))) : [];
-  if (again.length) msgs = again;
-  const changed = (run.changed_areas || []).map(a => t("chart." + a) !== "chart." + a ? t("chart." + a) : a).join(", ");
-  const GENERIC = [t("res.g1"), t("res.g2"), t("res.g3")];
-  const seen = !!again.length || (!msgs.length && !run.calls);   // same text sent again: nothing new was read
-  // a message that gave the planner nothing to use gets the general questions, unless it already carries specific ones
-  const thin = msgs.some(m => m.status === "irrelevant" && !(m.ask || []).length);
-  const asks = msgs.flatMap(m => ((m.ask || []).length ? m.ask : (m.status === "irrelevant" ? GENERIC : [])).map(q => ({q, n: m.n})));
-  if (!asks.length && !again.length && (seen || (!msgs.length && !run.calls))) GENERIC.forEach(q => asks.push({q, n: 0}));
-  const notice = seen ? t("res.seen") : (thin || asks.length ? t("res.notenough") : "");
-  card.innerHTML = `<h3>${t("res.title")}</h3>
-    <div class="muted small">${t("res.meta", {n: run.run, c: run.calls, k: run.tokens?.total ?? 0})}</div>
-    ${msgs.length ? msgs.map(m => `<div class="resmsg"><div class="row">${langBadge(m.lang)}<span class="badge b-${esc(m.status)}">${esc(STATUS_COLOR[m.status] ? statusLabel(m.status) : m.status)}</span><b>${esc(title(m.sender))}</b></div>
-        <div class="gist" dir="ltr">${esc(m.gist)}</div><div class="small">→ ${esc(m.reason || "")}</div></div>`).join("")
-      : (seen ? "" : `<p class="bad">${t("res.noread")}</p>`)}
-    ${notice ? `<p class="warn"><b>⚠ ${notice}</b></p>` : ""}
-    <p class="${changed ? "ok" : "muted"}"><b>${changed ? t("res.changed", {a: esc(changed)}) : t("res.nochange")}</b></p>
-    ${asks.length ? `<div class="asks"><h3>${t("res.questions")}</h3>${asks.map((x, i) => `<div class="ask"><label>${esc(x.q)}<input type="text" data-q="${i}" placeholder="${t("res.answer")}"></label><button class="btn btn-dark" data-send="${i}">${t("res.send")}</button></div>`).join("")}</div>` : ""}`;
-  card.classList.remove("hidden");
-  card.dataset.asks = JSON.stringify(asks.map(x => x.q));
-}
-$("resultCard").addEventListener("click", (e) => {
-  const b = e.target.closest("button[data-send]"); if (!b) return;
-  const card = $("resultCard"), q = JSON.parse(card.dataset.asks || "[]")[+b.dataset.send];
-  const ans = card.querySelector(`input[data-q="${b.dataset.send}"]`).value.trim(); if (!ans) return;
-  $("newMsg").value = "Re: " + q + String.fromCharCode(10) + ans; $("sendMsg").click();
 });
 
 // ---------- chart helpers ----------
@@ -247,6 +213,7 @@ function render() {
   $("privacy").innerHTML = (s.privacy || []).map(d => `<li>${esc(d)}</li>`).join("") || `<li class="muted">${t("privacy.none")}</li>`;
 
   applyVisibility(s);
+  renderPlanTop(s);
   renderBriefing(s);
   renderLangs(s.messages || []); renderMessages(s.messages || []); renderRejected(s.rejected || []); renderTrace(s); renderHistory(runs);
 }
@@ -286,24 +253,27 @@ function renderBars() {
       <div class="bar ${i.hi ? "hi" : ""}" style="height:${100 * (i.value || 0) / max}%"></div><span class="lbl">${esc(i.label)}</span></div>`).join("");
 }
 
+const PALETTE = ["var(--green)", "var(--purple)", "var(--peach)", "var(--yellow)", "var(--blue)", "var(--red)"];
 function renderBudget(b) {
-  if (!b.cap) { $("budget").innerHTML = `<p class="muted">${t("budget.none")}</p>`; return; }
-  $("budget").innerHTML = `<table>${(b.lines || []).map(l => `<tr><td>${esc(title(l.item))}</td><td>${tag(l.area)}</td><td class="num">${rs(l.amount)}</td></tr>`).join("")}
-    <tr><th>${t("t.total")}</th><th></th><th class="num">${rs(b.total)}</th></tr>
-    <tr><td>${t("t.remaining", {v: rs(b.cap)})}</td><td></td><td class="num ${b.remaining >= 0 ? "ok" : "bad"}">${rs(b.remaining)}</td></tr></table>
+  if (!b.cap && !(b.lines || []).length) { $("budget").innerHTML = `<p class="muted">${t("budget.none")}</p>`; return; }
+  const lines = (b.lines || []).filter(l => l.amount > 0);
+  const segs = lines.map((l, i) => ({label: title(l.item), color: PALETTE[i % PALETTE.length], value: l.amount}));
+  $("budget").innerHTML = `<div class="budget-vis"><div class="donut-wrap sm">${donut(segs, short(b.total || 0), b.cap ? t("gauge.of", {a: "", b: short(b.cap)}).trim() : "", 170, 28)}</div>
+    <div class="blegend">${lines.map((l, i) => `<div class="brow"><i style="background:${PALETTE[i % PALETTE.length]}"></i><span>${esc(title(l.item))}</span><b>${rs(l.amount)}</b></div>`).join("")}
+      <div class="brow total"><span>${t("t.total")}</span><b>${rs(b.total)}</b></div>
+      ${b.cap ? `<div class="brow"><span>${t("t.remaining", {v: rs(b.cap)})}</span><b class="${b.remaining >= 0 ? "ok" : "bad"}">${rs(b.remaining)}</b></div>` : ""}</div></div>
     ${(b.optional || []).map(o => `<div class="row" style="margin-top:10px"><span class="badge b-optional">${t("t.optional")}</span>${esc(title(o.item))} · ${rs(o.amount)} <span class="small ${o.fits ? "ok" : "bad"}">${o.fits ? t("t.fits") : t("t.nofit")}</span></div>`).join("")}`;
 }
 function renderVenue(v, h) {
   if (!v.name) { $("venue").innerHTML = `<p class="bad">${t("venue.none")}</p>`; return; }
   $("venue").innerHTML = `<div class="kpi"><div class="v">${esc(title(v.name))}</div><div class="l">${esc(t("venue.seats", {c: v.capacity, h: h.total}))} · ${rs(v.price)}</div></div>
-    <table><tr><th>${t("col.option")}</th><th class="num">${t("col.seats")}</th><th class="num">${t("col.price")}</th></tr>
-    ${(v.options || []).map(o => `<tr title="${esc(o.note)}"><td>${o.chosen ? "<b class='ok'>●</b> " : ""}${esc(title(o.name))}<div class="muted small">${esc(o.note || "")}</div></td><td class="num">${esc(o.capacity)}</td><td class="num">${rs(o.price)}</td></tr>`).join("")}</table>`;
+    <details class="fold"><summary>${t("compare")}</summary><table><tr><th>${t("col.option")}</th><th class="num">${t("col.seats")}</th><th class="num">${t("col.price")}</th></tr>
+    ${(v.options || []).map(o => `<tr title="${esc(o.note)}"><td>${o.chosen ? "<b class='ok'>●</b> " : ""}${esc(title(o.name))}<div class="muted small">${esc(o.note || "")}</div></td><td class="num">${esc(o.capacity)}</td><td class="num">${rs(o.price)}</td></tr>`).join("")}</table></details>`;
 }
 function renderFood(f, h) {
   if (!f.name) { $("food").innerHTML = `<p class="bad">${t("food.none")}</p>`; return; }
   $("food").innerHTML = `<div class="kpi"><div class="v">${esc(f.boxes)} × ${esc(title(f.name))}</div><div class="l">${rs(f.price_per_head)} each · ${rs(f.cost)}</div></div>
-    <p class="muted small">${esc(h.students)} students + ${esc(h.staff)} staff + ${esc(h.judges)} judges${h.other ? " + " + esc(h.other) + " others" : ""} = <b>${esc(h.total)}</b></p>
-    <table><tr><th>${t("col.option")}</th><th class="num">${t("col.perhead")}</th></tr>${(f.options || []).map(o => `<tr><td>${o.chosen ? "<b class='ok'>●</b> " : ""}${esc(title(o.name))}</td><td class="num">${rs(o.price_per_head)}</td></tr>`).join("")}</table>`;
+    <details class="fold"><summary>${t("compare")}</summary><table><tr><th>${t("col.option")}</th><th class="num">${t("col.perhead")}</th></tr>${(f.options || []).map(o => `<tr><td>${o.chosen ? "<b class='ok'>●</b> " : ""}${esc(title(o.name))}</td><td class="num">${rs(o.price_per_head)}</td></tr>`).join("")}</table></details>`;
 }
 function renderJudging(j) {
   if (!j.teams) { $("judging").innerHTML = `<p class="bad">${t("judging.none")}</p>`; return; }
@@ -421,7 +391,7 @@ $("newBtn").addEventListener("click", async () => {
   try {
     const res = await fetch("/api/reset", {method: "POST"}); const out = await res.json();
     if (!out.ok) { alert(t("msg.error", {e: out.error || "see terminal"})); return; }
-    $("resultCard").classList.add("hidden"); ATTACH = []; drawAttach(); $("newMsg").value = "";
+    LAST_SENT = ""; ATTACH = []; drawAttach(); $("newMsg").value = "";
     lastUpdated = null; await poll(); showTab("overview");
   } catch (_) { alert(t("msg.nobackend")); }
 });
@@ -433,4 +403,66 @@ $("briefDl").addEventListener("click", () => { if (STATE) downloadText(briefingT
 $("briefCopy").addEventListener("click", async () => {
   if (!STATE) return;
   try { await navigator.clipboard.writeText(briefingText(STATE)); $("briefCopy").textContent = t("br.copied"); setTimeout(() => { $("briefCopy").textContent = t("br.copy"); }, 1500); } catch (_) { /* clipboard blocked */ }
+});
+
+// ---------- Plan page top: KPI tiles, latest update strip, needs-attention card ----------
+function afterProcess(sent) {                 // after a message is processed, go straight to the Plan page
+  LAST_SENT = sent || "";
+  showTab("overview"); renderPlanTop(STATE); window.scrollTo({top: 0, behavior: "smooth"});
+}
+const shortWhy = (r) => { const m = String(r || "").match(/\(([^)]{6,})\)/); return (m ? m[1] : String(r || "")).slice(0, 140); };
+
+function renderPlanTop(s) {
+  if (!s) return;
+  const p = s.plan || {}, h = p.headcount || {}, v = p.venue || {}, f = p.food || {}, j = p.judging || {}, b = p.budget || {}, checks = s.checks || [];
+  const passed = checks.filter(c => c.ok).length, msgs = s.messages || [];
+  const tile = (label, value, sub, extra = "") => `<div class="kpi-tile"><div class="kl">${esc(label)}</div><div class="kv">${esc(value)}</div><div class="ks">${esc(sub || "")}</div>${extra}</div>`;
+  const tiles = [];
+  if (h.total > 0) tiles.push(tile(t("k.people"), h.total, `${h.students || 0} ${t("hc.students")} · ${h.staff || 0} ${t("hc.staff")} · ${h.judges || 0} ${t("hc.judges")}`));
+  if (j.teams) tiles.push(tile(t("k.teams"), j.teams, j.used ? `${j.used} ${t("hc.judges")}` : ""));
+  if (v.name) tiles.push(tile(t("card.venue"), title(v.name), t("venue.seats", {c: v.capacity, h: h.total || "?"})));
+  if (f.name) tiles.push(tile(t("k.meals"), f.boxes, `${title(f.name)} · ${rs(f.price_per_head)}`));
+  if (b.cap || b.total) {
+    const pct = b.cap ? Math.min(100, 100 * b.total / b.cap) : 0;
+    tiles.push(tile(t("card.budgetused"), rs(b.total), b.cap ? t("gauge.left", {v: rs(b.remaining)}) : "",
+      b.cap ? `<div class="kbar"><i style="width:${pct}%;background:${b.remaining < 0 ? "var(--red)" : "var(--green)"}"></i></div>` : ""));
+  }
+  if (checks.length) tiles.push(`<div class="kpi-tile ${passed === checks.length ? "good" : "badk"}"><div class="kl">${t("k.status")}</div><div class="kv">${passed === checks.length ? "✓ " + t("plan.valid") : "⚠ " + (checks.length - passed)}</div><div class="ks">${passed}/${checks.length} ${t("unit.passed")}</div></div>`);
+  $("kpis").innerHTML = tiles.join("");
+
+  // what the last run did
+  const run = (s.runs || []).slice(-1)[0], strip = $("latestStrip");
+  const fresh = run ? msgs.filter(m => (run.new_messages || []).includes(m.n)) : [];
+  const again = !fresh.length && run && !run.calls && LAST_SENT ? msgs.filter(m => m.text && LAST_SENT.includes(m.text.slice(0, 30))) : [];
+  const shown = fresh.length ? fresh : again;
+  if (shown.length) {
+    const ch = fresh.length && run.kind !== "full" ? (run.changes || []) : [];
+    const many = shown.length > 3;                   // a whole pack: show counts, not ten rows
+    const cnt = {}; shown.forEach(m => cnt[m.status] = (cnt[m.status] || 0) + 1);
+    strip.innerHTML = `<div class="strip-head"><b>${fresh.length ? t("strip.title", {n: run.run}) : t("res.seen")}</b>${many ? ` <span class="muted">${t("strip.read", {n: shown.length})}</span>` : ""}</div>
+      ${many ? `<div class="chips">${Object.keys(STATUS_COLOR).filter(k => cnt[k]).map(k => `<span class="badge b-${k}">${statusLabel(k)}: ${cnt[k]}</span>`).join("")}</div>`
+             : shown.map(m => `<div class="strip-msg">${langBadge(m.lang)}<span class="badge b-${esc(m.status)}">${esc(STATUS_COLOR[m.status] ? statusLabel(m.status) : m.status)}</span><b>${esc(title(m.sender))}</b><span class="muted">${esc(m.gist || "")}</span></div>`).join("")}
+      ${fresh.length ? `<div class="chips">${run.kind === "full" ? `<span class="chip chg">${t("strip.created", {n: fresh.length})}</span>` : ch.length ? ch.slice(0, 5).map(c => `<span class="chip chg">${esc(changeText(c))}</span>`).join("") + (ch.length > 5 ? `<span class="chip">+${ch.length - 5}</span>` : "") : `<span class="chip">${t("br.lu.none")}</span>`}</div>` : ""}`;
+    strip.classList.remove("hidden");
+  } else strip.classList.add("hidden");
+
+  // questions, rejected messages and notes
+  const GENERIC = [t("res.g1"), t("res.g2"), t("res.g3")];
+  const asks = shown.flatMap(m => ((m.ask || []).length ? m.ask : (m.status === "irrelevant" && fresh.length === 1 ? GENERIC : [])));
+  asks.splice(4);                                  // never a wall of questions
+  const rej = s.rejected || [], notes = s.decisions || [];
+  const cardEl = $("attention");
+  if (!asks.length && !rej.length && !notes.length) { cardEl.classList.add("hidden"); return; }
+  cardEl.innerHTML = `<h3>${t("br.h.attention")}</h3>
+    ${asks.length ? `<div class="att-sec"><h4>${t("res.questions")}</h4>${asks.map((q, i) => `<div class="ask"><label>${esc(q)}<input type="text" data-q="${i}" placeholder="${t("res.answer")}"></label><button class="btn btn-dark" data-send="${i}">${t("res.send")}</button></div>`).join("")}</div>` : ""}
+    ${rej.length ? `<div class="att-sec"><h4>${t("nav.rejected")}</h4>${rej.map(r => `<div class="att-row bad">✘ #${r.n} ${esc(title(r.sender))} — ${esc(shortWhy(r.reason))}</div>`).join("")}</div>` : ""}
+    ${notes.length ? `<div class="att-sec"><h4>${t("card.decisions")}</h4>${notes.slice(0, 4).map(n => `<div class="att-row">• ${esc(n)}</div>`).join("")}</div>` : ""}`;
+  cardEl.dataset.asks = JSON.stringify(asks);
+  cardEl.classList.remove("hidden");
+}
+$("attention").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-send]"); if (!b) return;
+  const card = $("attention"), q = JSON.parse(card.dataset.asks || "[]")[+b.dataset.send];
+  const ans = card.querySelector(`input[data-q="${b.dataset.send}"]`).value.trim(); if (!ans) return;
+  $("newMsg").value = "Re: " + q + String.fromCharCode(10) + ans; $("sendMsg").click();
 });

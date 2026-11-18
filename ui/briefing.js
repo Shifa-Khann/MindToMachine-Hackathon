@@ -3,6 +3,12 @@
 // and follows the UI language. Returns sections: [{h: heading, lines: [text...]}].
 "use strict";
 
+// "Total cost: Rs 1 -> Rs 2" for one change record (used by the briefing and the Plan page strip)
+function changeText(c) {
+  const val = (kind, x) => x === null || x === undefined ? "—" : kind === "money" ? rs(x) : kind === "name" ? title(x) : kind === "min" ? x + " " + t("unit.min") : String(x);
+  return `${t("f." + c.field, {item: title(c.item || "")})}: ${val(c.kind, c.old)} → ${val(c.kind, c.new)}`;
+}
+
 function buildBriefing(state) {
   const p = state.plan || {}, h = p.headcount || {}, v = p.venue || {}, f = p.food || {}, j = p.judging || {},
     sc = p.schedule || {}, b = p.budget || {}, checks = state.checks || [], msgs = state.messages || [];
@@ -12,12 +18,11 @@ function buildBriefing(state) {
   // Latest update: what the newest message(s) did to the plan, so the briefing differs after every message
   const run = (state.runs || []).slice(-1)[0];
   if (run && (run.new_messages || []).length) {
-    const val = (kind, x) => x === null || x === undefined ? "—" : kind === "money" ? rs(x) : kind === "name" ? title(x) : kind === "min" ? x + " " + t("unit.min") : String(x);
     const lines = [];
     msgs.filter(m => run.new_messages.includes(m.n)).forEach(m =>
       lines.push(t("br.lu.msg", {n: m.n, s: title(m.sender), g: m.gist || "", st: STATUS_COLOR[m.status] ? statusLabel(m.status) : m.status})));
     const ch = run.changes || [];
-    ch.slice(0, 12).forEach(c => lines.push(`${t("f." + c.field, {item: title(c.item || "")})}: ${val(c.kind, c.old)} → ${val(c.kind, c.new)}`));
+    ch.slice(0, 12).forEach(c => lines.push(changeText(c)));
     if (ch.length > 12) lines.push(t("br.lu.more", {n: ch.length - 12}));
     if (!ch.length) lines.push(t("br.lu.none"));
     out.push({h: t("br.h.latest", {n: run.run}), lines, latest: true});

@@ -121,3 +121,29 @@ class ScheduleNameTests(unittest.TestCase):
         self.assertNotIn("judging", [b["kind"] for b in blocks])
         blocks, _ = engine.make_schedule(600, 240, [], False, 30)
         self.assertIn("judging", [b["kind"] for b in blocks])
+
+
+class ExtractionRobustnessTests(unittest.TestCase):
+    def test_rules_without_keys_do_not_supersede_each_other(self):
+        m1 = msg(1, "approver", "2030-03-01", [{"type": "rule", "area": "venue", "metric": "venue_features", "op": "requires", "value": "ramp"}])
+        m2 = msg(2, "approver", "2030-03-02", [{"type": "rule", "area": "food", "metric": "food_price_per_head", "op": "<=", "value": 500}])
+        keys = {f["key"] for f in engine.flatten([m1, m2])}
+        self.assertEqual(len(keys), 2)
+
+    def test_unavailable_venue_is_not_an_option(self):
+        msgs = base() + [msg(9, "venue", "2030-03-05", [{"key": "venue:grand room", "type": "venue", "name": "grand room", "available": False}])]
+        plan = engine.plan_with_rejections(msgs, {}, {})[0]
+        self.assertNotIn("grand room", [o["name"] for o in plan["venue"]["options"]])
+
+    def test_service_charge_rule_raises_food_cost(self):
+        plain = engine.plan_with_rejections(base(), {}, {})[0]["food"]["cost"]
+        extra = msg(9, "caterer", "2030-03-05", [{"type": "rule", "area": "food", "metric": "service_charge", "op": "==", "value": 10}])
+        with_fee = engine.plan_with_rejections(base() + [extra], {}, {})[0]["food"]["cost"]
+        self.assertEqual(with_fee, round(plain * 1.1))
+
+    def test_judge_limits_given_as_rules_are_used(self):
+        extra = msg(9, "judging", "2030-03-05", [{"type": "rule", "area": "judges", "metric": "teams_per_judge", "op": "<=", "value": 2}])
+        msgs = base()
+        msgs[4]["facts"] = [f for f in msgs[4]["facts"] if f["key"] != "judges:max_teams"]   # only the rule supplies the limit
+        plan = engine.plan_with_rejections(msgs + [extra], {}, {})[0]
+        self.assertEqual(plan["judging"]["max_teams"], 2)

@@ -30,3 +30,9 @@ class FollowUpTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UnavailableTests(unittest.TestCase):
+    def test_unavailable_option_asks_nothing(self):
+        m = {"facts": [{"type": "venue", "name": "invented hall", "available": False}]}
+        self.assertEqual(reading.follow_ups(m), [])
