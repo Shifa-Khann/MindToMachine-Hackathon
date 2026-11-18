@@ -27,6 +27,7 @@ The brief rewards justified parts, not many agents. EventMind has **one model ro
 | Validator | Code | — | Inside the planner | Plan + rules | Pass/fail checks | Guarantees a valid plan |
 | Rejector | Code | — | When checks fail | Facts + checks | Rejected fact + reason | Catches the wrong message |
 | Redactor | Code | — | Before any model call | Raw text | Text without personal data | Privacy |
+| Briefer | Code | — | In the UI, on every render | Validated plan + decisions | Plain-language event summary (EN/UR) | Explains and summarises the plan with no model call, so it cannot invent a number |
 
 ### Reader prompt contract
 Lives in `eventmind/reading.py`. It describes the schema only, contains no example facts from any pack, and returns JSON only. Any language goes in; English and plain numbers come out.

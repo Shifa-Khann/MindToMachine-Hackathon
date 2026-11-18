@@ -244,6 +244,7 @@ function render() {
   $("privacy").innerHTML = (s.privacy || []).map(d => `<li>${esc(d)}</li>`).join("") || `<li class="muted">${t("privacy.none")}</li>`;
 
   applyVisibility(s);
+  renderBriefing(s);
   renderLangs(s.messages || []); renderMessages(s.messages || []); renderRejected(s.rejected || []); renderTrace(s); renderHistory(runs);
 }
 
@@ -403,7 +404,7 @@ function applyVisibility(s) {
   show("headBars", p.headcount?.total > 0);
   show("checkDonut", anyPlan); show("checks", anyPlan);
   show("gauge", p.budget?.cap); show("tokTotal", (s.totals?.calls || 0) > 0);
-  show("decisions", msgs.length);
+  show("decisions", msgs.length); show("briefBody", msgs.length);
   document.querySelector("#tab-overview .hero").classList.toggle("hidden", !msgs.length);
   $("planEmpty").classList.toggle("hidden", msgs.length > 0);
   document.querySelectorAll("#tab-overview .grid-main, #tab-overview .grid-4, #tab-overview .grid-3, #tab-overview .grid-2").forEach(g =>
@@ -420,4 +421,13 @@ $("newBtn").addEventListener("click", async () => {
     $("resultCard").classList.add("hidden"); ATTACH = []; drawAttach(); $("newMsg").value = "";
     lastUpdated = null; await poll(); showTab("overview");
   } catch (_) { alert(t("msg.nobackend")); }
+});
+
+// Schedule + briefing downloads
+$("schXlsx").addEventListener("click", () => { if (STATE) downloadScheduleExcel(STATE, title); });
+$("schCsv").addEventListener("click", () => { if (STATE) downloadScheduleCsv(STATE, title); });
+$("briefDl").addEventListener("click", () => { if (STATE) downloadText(briefingText(STATE), "event-summary-" + stamp() + ".txt"); });
+$("briefCopy").addEventListener("click", async () => {
+  if (!STATE) return;
+  try { await navigator.clipboard.writeText(briefingText(STATE)); $("briefCopy").textContent = t("br.copied"); setTimeout(() => { $("briefCopy").textContent = t("br.copy"); }, 1500); } catch (_) { /* clipboard blocked */ }
 });

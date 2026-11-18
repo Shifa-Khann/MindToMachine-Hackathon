@@ -144,10 +144,27 @@ function buildSheets(state, nice) {
   return [summary, budget, schedule, venues, food, judges, checksS, messages, rejected, trace];
 }
 
-function downloadExcel(state, nice) {
-  const bytes = workbookBytes(buildSheets(state, nice || (x => x ?? "")));
-  const blob = new Blob([bytes], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-  const d = new Date(), pad = (n) => String(n).padStart(2, "0");
-  const a = Object.assign(document.createElement("a"), {href: URL.createObjectURL(blob), download: `event-plan-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.xlsx`});
+function saveBlob(blob, name) {
+  const a = Object.assign(document.createElement("a"), {href: URL.createObjectURL(blob), download: name});
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+function stamp() { const d = new Date(), pad = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+function downloadExcel(state, nice) {
+  const bytes = workbookBytes(buildSheets(state, nice || (x => x ?? "")));
+  saveBlob(new Blob([bytes], {type: XLSX_TYPE}), `event-plan-${stamp()}.xlsx`);
+}
+// Schedule only: .xlsx (same writer) or .csv (UTF-8 with BOM so Excel shows Urdu and symbols correctly)
+function downloadScheduleExcel(state, nice) {
+  const sheet = buildSheets(state, nice || (x => x ?? "")).find(x => x.name === "Schedule");
+  saveBlob(new Blob([workbookBytes([sheet])], {type: XLSX_TYPE}), `event-schedule-${stamp()}.xlsx`);
+}
+function downloadScheduleCsv(state, nice) {
+  const sheet = buildSheets(state, nice || (x => x ?? "")).find(x => x.name === "Schedule");
+  const BOM = String.fromCharCode(0xFEFF), CR = String.fromCharCode(13), LF = String.fromCharCode(10);
+  const q = (v) => { const t = v === null || v === undefined ? "" : String(v); return (t.includes(",") || t.includes('"') || t.includes(CR) || t.includes(LF)) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const lines = [sheet.cols.map(c => q(c.h)).join(","), ...sheet.rows.map(r => r.map(q).join(","))];
+  saveBlob(new Blob([BOM + lines.join(CR + LF)], {type: "text/csv;charset=utf-8"}), `event-schedule-${stamp()}.csv`);
+}
+function downloadText(text, name) { saveBlob(new Blob([String.fromCharCode(0xFEFF) + text], {type: "text/plain;charset=utf-8"}), name); }

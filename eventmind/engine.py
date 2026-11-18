@@ -171,6 +171,12 @@ def _collect(active):
     return ev, jd, venues, foods, expenses, breaks, qty, rules
 
 
+def break_name(b):
+    """"tea" -> "Tea break", but "tea break" stays "Tea break" (no doubled word)."""
+    n = str(b.get("name") or "break").strip().capitalize()
+    return n if n.lower().endswith("break") else n + " break"
+
+
 def make_schedule(start_min, duration, breaks, has_food, judging_min):
     blocks = [("Opening & briefing", FIXED["opening"], "ceremony")]
     middle = []
@@ -179,13 +185,14 @@ def make_schedule(start_min, duration, breaks, has_food, judging_min):
     for b in breaks:
         mins = int(num(b.get("minutes")) or 0)
         if mins:
-            middle.append((str(b.get("name") or "break").capitalize() + " break", mins, "break"))
+            middle.append((break_name(b), mins, "break"))
     fixed = FIXED["opening"] + sum(x[1] for x in middle) + judging_min + FIXED["closing"]
     build = int(duration - fixed)
     b1 = (build // 2) // 5 * 5
     b2 = build - b1
     blocks += [("Build session 1", b1, "build")] + middle + [("Build session 2", b2, "build"),
                ("Judging at tables", judging_min, "judging"), ("Closing & prizes", FIXED["closing"], "ceremony")]
+    blocks = [x for x in blocks if x[1] > 0 or x[2] != "judging"]      # no judging time known -> no empty 0-minute block
     out, t = [], start_min
     for item, mins, kind in blocks:
         out.append({"start": min_to_hhmm(t), "end": min_to_hhmm(t + mins), "item": item, "minutes": mins, "kind": kind})
@@ -364,7 +371,7 @@ def validate(ctx, v, fo, budget, duration, confirmed, needed, max_t, mpt, judgin
         duration and ctx["duration_min"] == duration and build_min >= MIN_BUILD,
         f"{int(duration or 0)} min, build >= {MIN_BUILD}", f"{ctx['duration_min']} min, build {build_min}")
     for b in breaks:
-        name = str(b.get("name") or "break").capitalize() + " break"
+        name = break_name(b)
         blk = next((x for x in schedule if x["item"] == name), None)
         add(f"break:{b['key']}", "schedule", f"{name} included",
             blk and blk["minutes"] >= (num(b.get("minutes")) or 0), f"{b.get('minutes')} min",

@@ -72,6 +72,14 @@
         <ol id="stepper" class="stepper"></ol>
       </div>
 
+      <div class="card brief">
+        <div class="card-head">
+          <div><h3 data-i18n="br.title">Event briefing</h3><div class="muted small" data-i18n="br.sub">A plain-language summary of the plan.</div></div>
+          <div class="row"><button id="briefCopy" class="btn" type="button" data-i18n="br.copy">Copy</button><button id="briefDl" class="btn" type="button" data-i18n="br.download">Download summary</button></div>
+        </div>
+        <div id="briefBody" class="brbody"></div>
+      </div>
+
       <div class="grid-main">
         <div class="card">
           <div class="card-head">
@@ -128,7 +136,10 @@
       </div>
 
       <div class="grid-2">
-        <div class="card" data-area="schedule"><h3 data-i18n="card.schedule">Schedule</h3><div id="schedule"></div></div>
+        <div class="card" data-area="schedule">
+          <div class="card-head"><h3 data-i18n="card.schedule">Schedule</h3>
+            <div class="row"><span class="muted small" data-i18n="sch.dl">Download schedule</span><button id="schXlsx" class="btn" type="button" data-i18n="sch.xlsx">Excel</button><button id="schCsv" class="btn" type="button" data-i18n="sch.csv">CSV</button></div></div>
+          <div id="schedule"></div></div>
         <div class="card" data-area="budget"><h3 data-i18n="card.budgetlines">Budget lines</h3><div id="budget"></div></div>
       </div>
 
@@ -206,6 +217,7 @@
 </div>
 <script src="i18n.js"></script>
 <script src="xlsx.js"></script>
+<script src="briefing.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

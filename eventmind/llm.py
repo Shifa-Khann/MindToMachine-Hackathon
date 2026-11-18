@@ -26,6 +26,16 @@ class LLM:
         self.calls_this_run = 0
 
     def call(self, area, system, user, max_tokens=1500):
+        """One model call. If the provider's strict JSON mode rejects the output (json_validate_failed), the same
+        request is repeated once without JSON mode; both attempts appear in the trace."""
+        try:
+            return self._call(area, system, user, max_tokens, config.JSON_MODE)
+        except RuntimeError as e:
+            if config.JSON_MODE and "json_validate_failed" in str(e):
+                return self._call(area, system, user, max_tokens, False)
+            raise
+
+    def _call(self, area, system, user, max_tokens, json_mode):
         assert area in AREAS, area
         if self.max_calls is not None and self.calls_this_run >= self.max_calls:
             raise CallBudgetExceeded(f"update limit of {self.max_calls} model calls reached")
@@ -37,7 +47,7 @@ class LLM:
                  "ms": 0, "error": None}
         body = {"model": config.MODEL, "temperature": 0, "max_tokens": max_tokens,
                 "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
-        if config.JSON_MODE:
+        if json_mode:
             body["response_format"] = {"type": "json_object"}
         req = urllib.request.Request(
             config.BASE_URL + "/chat/completions", data=json.dumps(body).encode("utf-8"),

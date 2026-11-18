@@ -44,7 +44,7 @@ def clean_lang(value):
     return "und"
 
 SYSTEM = """You extract event-planning facts from messages (emails, chats, notices) for ONE event.
-Messages can be in ANY language or script, mixed, informal, with typos. Split the text into separate messages, in order.
+Messages can be in ANY language or script, mixed, informal, with typos. Split the text into separate messages, in order: one object per message (a new sender/date header or a blank line starts a new message). Never merge messages and never skip one, even if it has no facts.
 Return ONLY JSON: {"messages":[{"sender":str,"role":ROLE,"date":"YYYY-MM-DD"|null,"lang":LANG,"quote":"first 6 words of the message, verbatim","gist":"<=12 English words","ask":[QUESTION...],"flags":[FLAG...],"facts":[FACT...]}]}
 QUESTION: <=2 short English questions for the sender, ONLY if the message is about the event but a number or detail needed to plan it is missing or unclear (price, headcount, date, amount, time). Otherwise [].
 LANG: ISO 639-1 code of the message language (en, ur, hi, ar...); Roman-script Urdu or Hindi = "ur-Latn" / "hi-Latn"; several languages in one message = "mixed".

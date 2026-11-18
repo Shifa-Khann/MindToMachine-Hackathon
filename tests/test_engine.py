@@ -108,3 +108,16 @@ class EngineTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ScheduleNameTests(unittest.TestCase):
+    def test_break_name_not_doubled(self):
+        self.assertEqual(engine.break_name({"name": "tea break"}), "Tea break")
+        self.assertEqual(engine.break_name({"name": "tea"}), "Tea break")
+        self.assertEqual(engine.break_name({}), "Break")
+
+    def test_zero_minute_judging_block_is_skipped(self):
+        blocks, _ = engine.make_schedule(600, 240, [], False, 0)
+        self.assertNotIn("judging", [b["kind"] for b in blocks])
+        blocks, _ = engine.make_schedule(600, 240, [], False, 30)
+        self.assertIn("judging", [b["kind"] for b in blocks])
