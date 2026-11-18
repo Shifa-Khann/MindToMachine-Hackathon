@@ -7,6 +7,32 @@ from .llm import parse_json
 _LANG = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z]{2,4})?$")
 
 
+# numbers the planner needs for each fact type; a missing one becomes a follow-up question (plain code, no model call)
+REQUIRED = {"event": [("value", "number")], "venue": [("capacity", "seating capacity"), ("price", "price in Rs")],
+            "food": [("price_per_head", "price per head in Rs")], "judges": [("value", "number")],
+            "expense": [("amount", "amount in Rs")], "optional": [("amount", "amount in Rs")],
+            "break": [("minutes", "length in minutes")], "quantity": [("value", "quantity")]}
+
+
+def _num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def follow_ups(m):
+    """Questions to ask about one message: the model's own (max 2) plus any required number that is missing."""
+    qs = [str(q).strip() for q in (m.get("ask") or []) if isinstance(q, (str,)) and str(q).strip()][:2]
+    for f in m.get("facts") or []:
+        if not isinstance(f, dict):
+            continue
+        what = f.get("name") or f.get("item") or f.get("field") or f.get("key") or f.get("type")
+        for field, label in REQUIRED.get(f.get("type"), []):
+            if not _num(f.get(field)):
+                q = f"What is the {label} for '{what}'?"
+                if q not in qs:
+                    qs.append(q)
+    return qs[:5]
+
+
 def clean_lang(value):
     """Normalise the model's language tag; anything unusable becomes 'und' (undetermined)."""
     v = str(value or "").strip().replace("_", "-")
@@ -19,7 +45,8 @@ def clean_lang(value):
 
 SYSTEM = """You extract event-planning facts from messages (emails, chats, notices) for ONE event.
 Messages can be in ANY language or script, mixed, informal, with typos. Split the text into separate messages, in order.
-Return ONLY JSON: {"messages":[{"sender":str,"role":ROLE,"date":"YYYY-MM-DD"|null,"lang":LANG,"quote":"first 6 words of the message, verbatim","gist":"<=12 English words","flags":[FLAG...],"facts":[FACT...]}]}
+Return ONLY JSON: {"messages":[{"sender":str,"role":ROLE,"date":"YYYY-MM-DD"|null,"lang":LANG,"quote":"first 6 words of the message, verbatim","gist":"<=12 English words","ask":[QUESTION...],"flags":[FLAG...],"facts":[FACT...]}]}
+QUESTION: <=2 short English questions for the sender, ONLY if the message is about the event but a number or detail needed to plan it is missing or unclear (price, headcount, date, amount, time). Otherwise [].
 LANG: ISO 639-1 code of the message language (en, ur, hi, ar...); Roman-script Urdu or Hindi = "ur-Latn" / "hi-Latn"; several languages in one message = "mixed".
 ROLE: approver (gives official approval/budget/rules for the event) | venue | caterer | judging | finance | vendor | participant | other
 FLAG: "legal" (contract terms, legal threat, lawsuit) | "disputed" (contests or doubts another fact) | "privacy" (personal data: health, home address, IDs). Usually [].
@@ -46,10 +73,10 @@ UPDATE_HINT = ("These message(s) arrived AFTER all earlier ones. Reuse an existi
 def read(llm, text, known_keys, is_update):
     if is_update:
         user = UPDATE_HINT.format(keys=", ".join(sorted(known_keys)) or "none", text=text)
-        max_tokens = 900
+        max_tokens = 2500
     else:
         user = "MESSAGES:\n" + text
-        max_tokens = 3500
+        max_tokens = 6000
     out = llm.call("reading", SYSTEM, user, max_tokens=max_tokens)
     try:
         data = parse_json(out)

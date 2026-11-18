@@ -1,0 +1,32 @@
+"""Follow-up questions: built by plain code from invented facts, plus the model's own (capped)."""
+import unittest
+
+from eventmind import reading
+
+
+class FollowUpTests(unittest.TestCase):
+    def test_missing_number_becomes_question(self):
+        m = {"facts": [{"type": "venue", "name": "invented hall", "capacity": 80}]}
+        qs = reading.follow_ups(m)
+        self.assertEqual(len(qs), 1)
+        self.assertIn("price", qs[0])
+        self.assertIn("invented hall", qs[0])
+
+    def test_complete_facts_ask_nothing(self):
+        m = {"facts": [{"type": "expense", "item": "invented item", "amount": 100}, {"type": "rule", "text": "x"}]}
+        self.assertEqual(reading.follow_ups(m), [])
+
+    def test_non_numeric_and_bool_count_as_missing(self):
+        m = {"facts": [{"type": "expense", "item": "a", "amount": "lots"}, {"type": "break", "name": "b", "minutes": True}]}
+        self.assertEqual(len(reading.follow_ups(m)), 2)
+
+    def test_model_questions_kept_capped_and_cleaned(self):
+        m = {"ask": ["How many people?", "", 5, "By when?", "Third?"], "facts": []}
+        self.assertEqual(reading.follow_ups(m), ["How many people?", "By when?"])
+
+    def test_prompt_mentions_ask(self):
+        self.assertIn('"ask"', reading.SYSTEM)
+
+
+if __name__ == "__main__":
+    unittest.main()

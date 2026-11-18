@@ -129,8 +129,33 @@ $("sendMsg").addEventListener("click", async () => {
     $("sendStatus").textContent = out.ok ? t("msg.done") : t("msg.error", {e: out.error || "see terminal"});
     if (out.ok) { $("newMsg").value = ""; ATTACH = []; drawAttach(); }
     lastUpdated = null; await poll();
+    if (out.ok) showResult();
   } catch (_) { $("sendStatus").textContent = t("msg.nobackend"); }
   finally { $("sendMsg").disabled = false; }
+});
+
+// ---------- result of the last processed message(s) + follow-up questions ----------
+function showResult() {
+  const card = $("resultCard"), run = (STATE?.runs || []).slice(-1)[0];
+  if (!run) { card.classList.add("hidden"); return; }
+  const msgs = (STATE.messages || []).filter(m => (run.new_messages || []).includes(m.n));
+  const changed = (run.changed_areas || []).map(a => t("chart." + a) !== "chart." + a ? t("chart." + a) : a).join(", ");
+  const asks = msgs.flatMap(m => (m.ask || []).map(q => ({q, n: m.n})));
+  card.innerHTML = `<h3>${t("res.title")}</h3>
+    <div class="muted small">${t("res.meta", {n: run.run, c: run.calls, k: run.tokens?.total ?? 0})}</div>
+    ${msgs.length ? msgs.map(m => `<div class="resmsg"><div class="row">${langBadge(m.lang)}<span class="badge b-${esc(m.status)}">${esc(STATUS_COLOR[m.status] ? statusLabel(m.status) : m.status)}</span><b>${esc(title(m.sender))}</b></div>
+        <div class="gist" dir="ltr">${esc(m.gist)}</div><div class="small">→ ${esc(m.reason || "")}</div></div>`).join("")
+      : `<p class="bad">${t("res.noread")}</p>`}
+    <p class="${changed ? "ok" : "muted"}"><b>${changed ? t("res.changed", {a: esc(changed)}) : t("res.nochange")}</b></p>
+    ${asks.length ? `<div class="asks"><h3>${t("res.questions")}</h3>${asks.map((x, i) => `<div class="ask"><label>${esc(x.q)}<input type="text" data-q="${i}" placeholder="${t("res.answer")}"></label><button class="btn btn-dark" data-send="${i}">${t("res.send")}</button></div>`).join("")}</div>` : ""}`;
+  card.classList.remove("hidden");
+  card.dataset.asks = JSON.stringify(asks.map(x => x.q));
+}
+$("resultCard").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-send]"); if (!b) return;
+  const card = $("resultCard"), q = JSON.parse(card.dataset.asks || "[]")[+b.dataset.send];
+  const ans = card.querySelector(`input[data-q="${b.dataset.send}"]`).value.trim(); if (!ans) return;
+  $("newMsg").value = "Re: " + q + String.fromCharCode(10) + ans; $("sendMsg").click();
 });
 
 // ---------- chart helpers ----------
@@ -287,6 +312,7 @@ function renderMessages(msgs) {
       <div class="orig">${esc(m.text)}</div>
       <div class="gist" dir="ltr">${t("msg.summary")} · ${esc(m.gist)}</div>
       ${m.reason ? `<div class="reason">→ ${esc(m.reason)}</div>` : ""}
+      ${(m.ask || []).length ? `<div class="reason ask-note">❓ ${t("res.ask")}: ${(m.ask || []).map(esc).join(" · ")}</div>` : ""}
       ${(m.facts || []).length ? `<details><summary>${t("msg.facts", {n: m.facts.length})}</summary><table>
         ${m.facts.map(f => `<tr><td><code>${esc(f.key)}</code></td><td><span class="badge b-${esc(f.status)}">${esc(f.status)}</span></td><td><code>${esc(JSON.stringify(stripMeta(f)))}</code></td><td class="muted">${esc(f.reason || "")}</td></tr>`).join("")}</table></details>` : ""}
     </div>`).join("") || `<div class="card muted">${t("msg.none")}</div>`;
