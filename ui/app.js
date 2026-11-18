@@ -129,23 +129,26 @@ $("sendMsg").addEventListener("click", async () => {
     $("sendStatus").textContent = out.ok ? t("msg.done") : t("msg.error", {e: out.error || "see terminal"});
     if (out.ok) { $("newMsg").value = ""; ATTACH = []; drawAttach(); }
     lastUpdated = null; await poll();
-    if (out.ok) showResult();
+    if (out.ok) showResult(text);
   } catch (_) { $("sendStatus").textContent = t("msg.nobackend"); }
   finally { $("sendMsg").disabled = false; }
 });
 
 // ---------- result of the last processed message(s) + follow-up questions ----------
-function showResult() {
+function showResult(sent) {
   const card = $("resultCard"), run = (STATE?.runs || []).slice(-1)[0];
   if (!run) { card.classList.add("hidden"); return; }
-  const msgs = (STATE.messages || []).filter(m => (run.new_messages || []).includes(m.n));
+  let msgs = (STATE.messages || []).filter(m => (run.new_messages || []).includes(m.n));
+  // same text sent again: show what it did the first time (its status and its own questions) instead of nothing
+  const again = !msgs.length && !run.calls && sent ? (STATE.messages || []).filter(m => m.text && sent.includes(m.text.slice(0, 30))) : [];
+  if (again.length) msgs = again;
   const changed = (run.changed_areas || []).map(a => t("chart." + a) !== "chart." + a ? t("chart." + a) : a).join(", ");
   const GENERIC = [t("res.g1"), t("res.g2"), t("res.g3")];
-  const seen = !msgs.length && !run.calls;                       // same text sent again: nothing new was read
+  const seen = !!again.length || (!msgs.length && !run.calls);   // same text sent again: nothing new was read
   // a message that gave the planner nothing to use gets the general questions, unless it already carries specific ones
   const thin = msgs.some(m => m.status === "irrelevant" && !(m.ask || []).length);
   const asks = msgs.flatMap(m => ((m.ask || []).length ? m.ask : (m.status === "irrelevant" ? GENERIC : [])).map(q => ({q, n: m.n})));
-  if (seen || (!msgs.length && !run.calls)) GENERIC.forEach(q => asks.push({q, n: 0}));
+  if (!asks.length && !again.length && (seen || (!msgs.length && !run.calls))) GENERIC.forEach(q => asks.push({q, n: 0}));
   const notice = seen ? t("res.seen") : (thin || asks.length ? t("res.notenough") : "");
   card.innerHTML = `<h3>${t("res.title")}</h3>
     <div class="muted small">${t("res.meta", {n: run.run, c: run.calls, k: run.tokens?.total ?? 0})}</div>
