@@ -27,6 +27,7 @@ function showTab(name) {
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
   document.querySelectorAll(".tab").forEach(t => t.classList.add("hidden"));
   TAB = name;
+  if (name === "trace" && typeof maybePlayTrace === "function") setTimeout(maybePlayTrace, 0);
   $("pageTitle").textContent = t("title." + name);
   if (STATE) $("tab-" + name).classList.remove("hidden");
 }
@@ -319,6 +320,7 @@ function renderRejected(rej) {
 }
 
 function renderTrace(s) {
+  renderPipeline(s);
   const trace = s.trace || [], tot = s.totals || {};
   $("traceKpis").innerHTML = [[t("trace.calls"), tot.calls ?? 0], [t("trace.prompt"), tot.prompt ?? 0], [t("trace.completion"), tot.completion ?? 0], [t("trace.total"), tot.total ?? 0]]
     .map(([l, v]) => `<div class="card"><div class="big-num" style="margin:0"><span>${Number(v).toLocaleString()}</span></div><div class="muted small">${l}</div></div>`).join("");
@@ -416,19 +418,35 @@ function renderPlanTop(s) {
   if (!s) return;
   const p = s.plan || {}, h = p.headcount || {}, v = p.venue || {}, f = p.food || {}, j = p.judging || {}, b = p.budget || {}, checks = s.checks || [];
   const passed = checks.filter(c => c.ok).length, msgs = s.messages || [];
-  const tile = (label, value, sub, extra = "") => `<div class="kpi-tile"><div class="kl">${esc(label)}</div><div class="kv">${esc(value)}</div><div class="ks">${esc(sub || "")}</div>${extra}</div>`;
-  const tiles = [];
-  if (h.total > 0) tiles.push(tile(t("k.people"), h.total, `${h.students || 0} ${t("hc.students")} · ${h.staff || 0} ${t("hc.staff")} · ${h.judges || 0} ${t("hc.judges")}`));
-  if (j.teams) tiles.push(tile(t("k.teams"), j.teams, j.used ? `${j.used} ${t("hc.judges")}` : ""));
-  if (v.name) tiles.push(tile(t("card.venue"), title(v.name), t("venue.seats", {c: v.capacity, h: h.total || "?"})));
-  if (f.name) tiles.push(tile(t("k.meals"), f.boxes, `${title(f.name)} · ${rs(f.price_per_head)}`));
-  if (b.cap || b.total) {
-    const pct = b.cap ? Math.min(100, 100 * b.total / b.cap) : 0;
-    tiles.push(tile(t("card.budgetused"), rs(b.total), b.cap ? t("gauge.left", {v: rs(b.remaining)}) : "",
-      b.cap ? `<div class="kbar"><i style="width:${pct}%;background:${b.remaining < 0 ? "var(--red)" : "var(--green)"}"></i></div>` : ""));
-  }
-  if (checks.length) tiles.push(`<div class="kpi-tile ${passed === checks.length ? "good" : "badk"}"><div class="kl">${t("k.status")}</div><div class="kv">${passed === checks.length ? "✓ " + t("plan.valid") : "⚠ " + (checks.length - passed)}</div><div class="ks">${passed}/${checks.length} ${t("unit.passed")}</div></div>`);
-  $("kpis").innerHTML = tiles.join("");
+  // The five parts of the plan, always visible, in the order: budget, venue, schedule, food, judging
+  const sc = p.schedule || {};
+  const card5 = (area, icon, label, has, head, sub, lines, extra = "") => {
+    const bad = checks.filter(c => c.area === area && !c.ok).length, any = checks.some(c => c.area === area);
+    const state = !has ? "empty" : bad ? "warn" : "ok";
+    const badge = !has ? "" : bad ? `<span class="fbadge warn">⚠ ${t("five.issues", {n: bad})}</span>` : any ? `<span class="fbadge ok">✓ ${t("five.ok")}</span>` : "";
+    return `<div class="fcard s-${state}"><div class="fhead"><span class="fico">${icon}</span><span class="flabel">${esc(label)}</span>${badge}</div>
+      ${has ? `<div class="fbig">${esc(head)}</div><div class="fsub">${esc(sub || "")}</div>${extra}<ul class="flist">${lines.filter(Boolean).map(l => `<li>${esc(l)}</li>`).join("")}</ul>`
+            : `<div class="fempty"><b>${t("five.empty")}</b><span>${t("five.hint." + area)}</span></div>`}</div>`;
+  };
+  const pct = b.cap ? Math.min(100, 100 * b.total / b.cap) : 0;
+  const chosenNote = (v.options || []).find(o => o.chosen)?.note || "";
+  const miniTimeline = (sc.blocks || []).length
+    ? `<div class="timeline mini">${sc.blocks.map(x => `<div class="k-${esc(x.kind)}" style="flex:${x.minutes}" title="${esc(title(x.item))} ${x.start}-${x.end}"></div>`).join("")}</div>` : "";
+  const breaks = (sc.blocks || []).filter(x => x.kind === "break" || x.kind === "meal").map(x => `${title(x.item)} ${x.minutes} ${t("unit.min")}`).join(" · ");
+  $("kpis").innerHTML = [
+    card5("budget", "₨", t("chart.budget"), !!(b.cap || b.total), rs(b.total), b.cap ? t("gauge.of", {a: "", b: rs(b.cap)}).trim() : "",
+      [b.cap && t("gauge.left", {v: rs(b.remaining)}), ...(b.optional || []).map(o => `${t("t.optional")}: ${title(o.item)} ${rs(o.amount)} (${o.fits ? t("t.fits") : t("t.nofit")})`)],
+      b.cap ? `<div class="kbar"><i style="width:${pct}%;background:${b.remaining < 0 ? "var(--red)" : "var(--green)"}"></i></div>` : ""),
+    card5("venue", "⌂", t("card.venue"), !!v.name, title(v.name), t("venue.seats", {c: v.capacity, h: h.total || "?"}),
+      [`${t("col.price")}: ${rs(v.price)}`, chosenNote]),
+    card5("schedule", "◷", t("card.schedule"), (sc.blocks || []).length > 0, `${sc.start || ""}–${sc.end || ""}`, `${sc.duration_min ?? 0} ${t("unit.min")} · ${t("five.blocks", {n: (sc.blocks || []).length})}`,
+      [breaks], miniTimeline),
+    card5("food", "◍", t("card.food"), !!f.name, `${f.boxes} × ${title(f.name)}`, `${rs(f.price_per_head)} ${t("chart.perhead")}`,
+      [`${t("t.total")}: ${rs(f.cost)}`]),
+    card5("judging", "⚖", t("card.judging"), !!j.teams, `${j.used || 0} ${t("hc.judges")}`, `${j.teams} ${t("k.teams")}`,
+      [j.minutes_per_team > 0 && t("five.perteam", {m: j.minutes_per_team, x: j.max_teams ?? "?"}), `${t("five.honorarium", {v: rs(j.cost)})}`,
+       j.confirmed > j.used && t("five.standby", {n: j.confirmed - j.used})])
+  ].join("");
 
   // what the last run did
   const run = (s.runs || []).slice(-1)[0], strip = $("latestStrip");
@@ -466,3 +484,5 @@ $("attention").addEventListener("click", (e) => {
   const ans = card.querySelector(`input[data-q="${b.dataset.send}"]`).value.trim(); if (!ans) return;
   $("newMsg").value = "Re: " + q + String.fromCharCode(10) + ans; $("sendMsg").click();
 });
+
+initPipelineControls();

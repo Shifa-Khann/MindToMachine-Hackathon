@@ -62,7 +62,7 @@
         <button id="peAdd" class="btn btn-dark" type="button" data-i18n="pe.add">Add a message</button>
       </div>
       <div id="latestStrip" class="card strip hidden"></div>
-      <div id="kpis" class="kpis"></div>
+      <div id="kpis" class="five"></div>
       <div class="grid-2">
         <div class="card" data-area="schedule">
           <div class="card-head"><h3 data-i18n="card.schedule">Schedule</h3>
@@ -71,15 +71,15 @@
         <div class="card" data-area="budget"><h3 data-i18n="card.budgetlines">Budget lines</h3><div id="budget"></div></div>
       </div>
 
+      <div id="attention" class="card attention hidden"></div>
+      <details id="moreDetails" class="more">
+        <summary data-i18n="more.title">More details: summary, charts, checks, languages, tokens</summary>
       <div class="grid-3">
         <div class="card" data-area="venue"><h3 data-i18n="card.venue">Venue</h3><div id="venue"></div></div>
         <div class="card" data-area="food"><h3 data-i18n="card.food">Food</h3><div id="food"></div></div>
         <div class="card" data-area="judging"><h3 data-i18n="card.judging">Judging</h3><div id="judging"></div></div>
       </div>
 
-      <div id="attention" class="card attention hidden"></div>
-      <details id="moreDetails" class="more">
-        <summary data-i18n="more.title">More details: summary, charts, checks, languages, tokens</summary>
       <div class="card hero">
         <div class="hero-top">
           <div>
@@ -205,6 +205,23 @@
 
     <!-- TRACE -->
     <section id="tab-trace" class="tab hidden">
+      <div class="card" id="pipeCard">
+        <div class="card-head">
+          <div><h3 data-i18n="tr.title">Trace: how the plan was made</h3><div class="muted small" data-i18n="tr.note">Step order, agents, models, tokens and milliseconds are real. Only the animation pace is for viewing.</div></div>
+          <div id="pipeControls" class="row hidden">
+            <select id="pipeRun"></select>
+            <select id="pipeSpeed"><option value="1">1x</option><option value="2">2x</option><option value="4">4x</option></select>
+            <button id="pipeReplay" class="btn btn-dark" type="button" data-i18n="tr.replay">Replay</button>
+            <button id="pipeAll" class="btn" type="button" data-i18n="tr.all">Show all</button>
+          </div>
+        </div>
+        <div class="pbarwrap"><i id="pipeBar"></i></div>
+        <div id="pipeStats" class="pstats"></div>
+        <div id="pipeBody"></div>
+        <div id="pipeRail" class="prail"></div>
+        <div id="pipeSteps" class="psteps"></div>
+      </div>
+      <h3 class="sect" data-i18n="tr.calls">Every model call</h3>
       <div class="grid-4" id="traceKpis"></div>
       <div class="row filters">
         <select id="traceRun"><option value="">All runs</option></select>
@@ -223,6 +240,7 @@
 <script src="i18n.js"></script>
 <script src="xlsx.js"></script>
 <script src="briefing.js"></script>
+<script src="trace.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

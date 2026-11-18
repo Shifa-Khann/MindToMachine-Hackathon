@@ -23,6 +23,7 @@ Update this file and **push after every finished functionality** (see RULES.md).
 | 9h | Event briefing (code-written summary, copy/download), schedule download (Excel/CSV), JSON-mode retry, no doubled "break" name, no empty judging block, stricter message-splitting prompt | ✅ done | |
 | 9i | Briefing changes with every message: per-run plan diff (`eventmind/diff.py`) + "Latest update" section + live message counts | ✅ done | |
 | 9j | Plan page decluttered (KPI tiles, schedule + budget visuals, compact venue/food/judging, attention card, details folded); processing now leads to the Plan page; extraction fixes (rule key collisions, unavailable venues, service charge, judge limits as rules, model fallback for feature rules) | ✅ done | |
+| 9k | Animated Trace page: every step (ingest, redactor, each model call, resolver, planner, validator, rejector, change tracker, saver) recorded in `state.pipeline` with real timings; five plan cards (budget, venue, schedule, food, judging) on the Plan page | ✅ done | |
 | 10 | Real model run on sample pack (< 2 min, JSON parses) | ⏳ todo | |
 | 11 | Multilingual test with `data/invented_multilingual_pack.txt` | ⏳ todo | |
 | 12 | Push to GitHub, add organizers if private | ⏳ todo (GitHub not linked yet) | |

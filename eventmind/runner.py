@@ -8,8 +8,9 @@ import hashlib
 import json
 import time
 from datetime import datetime
+from pathlib import Path
 
-from . import config, diff, engine, ingest, reading, report
+from . import config, diff, engine, ingest, pipeline, reading, report
 from .llm import LLM, parse_json, CallBudgetExceeded
 
 AREA_CHECK_SYSTEM = ("You check one event-plan rule. Reply ONLY JSON: "
@@ -83,19 +84,28 @@ def run(path):
     llm = LLM(state, run_no, is_update)
     calls_before = len(state["trace"])
     new_ns = []
+    steps = pipeline.Steps(state, run_no)
+    steps.add("input", "Ingest", "io", "Message file received",
+              f"{Path(str(path)).name}: {len(raw)} characters, {len(text)} of them new")
 
     if text:
+        t_ = steps.timed()
         safe_text, pii_notes = ingest.redact(text)
+        steps.add("redact", "Redactor", "code", "Personal data removed before any model call",
+                  "; ".join(pii_notes) if pii_notes else "nothing to remove", ms=t_())
         for n in pii_notes:
             state["privacy"].append(f"Run {run_no}: {n}")
             state["events"].append({"run": run_no, "kind": "privacy", "text": n})
         known = {f["key"] for f in engine.flatten(state["messages"])}
         read_failed = False
+        mark = len(state["trace"])
         try:
             msgs = reading.read(llm, safe_text, known, is_update)
         except Exception as e:
             print(f"\n!! Reading failed: {e}\n   Plan left unchanged. Run the same command again to retry.")
             msgs, read_failed = [], True
+        steps.calls(mark, "Reader", "read")
+        t_ = steps.timed()
         msgs = reading.attach_original_text(msgs, safe_text)
         for m in msgs:
             m["n"] = len(state["messages"]) + 1
@@ -109,20 +119,56 @@ def run(path):
                 state["privacy"].append(f"Message #{m['n']} flagged {'/'.join(m['flags'])} - not applied, needs human review.")
             state["messages"].append(m)
             new_ns.append(m["n"])
+        langs = {}
+        for m in msgs:
+            langs[m["lang"]] = langs.get(m["lang"], 0) + 1
+        if msgs:
+            tag_detail = (f"{len(msgs)} messages, {sum(len(m.get('facts') or []) for m in msgs)} facts; languages: "
+                          + ", ".join(f"{k} {v}" for k, v in sorted(langs.items()))
+                          + f"; {sum(len(m.get('ask') or []) for m in msgs)} follow-up question(s)")
+        else:
+            tag_detail = "Reading failed - plan left unchanged" if read_failed else "no messages"
+        steps.add("tag", "Reader output check", "code", "Messages split, language and follow-up questions set", tag_detail, ms=t_())
         if not read_failed:                 # a failed read must stay "new" so the next run retries it
             state["raw_seen"].append({"sha": hashlib.sha256(raw.encode()).hexdigest(), "text": raw})
     else:
+        steps.add("read", "Reader", "code", "No new text", "This text was already processed - 0 model calls")
         print("No new messages in this file - plan unchanged, 0 model calls.")
 
     old_sections = engine.area_sections(state["plan"]) if state["plan"] else {}
     old_status = {str(f["key"]).lower() + "@" + str(m["n"]): f.get("status") for m in state["messages"] for f in (m.get("facts") or [])
                   if isinstance(f, dict) and "key" in f}
 
+    mark = len(state["trace"])
+    n_unknown = len(engine.unknown_rules(state["messages"]))
     mres = model_rule_checks(llm, state, state["messages"])
+    if len(state["trace"]) > mark:
+        steps.calls(mark, "Rule checker", "rule")
+    elif n_unknown:
+        steps.add("rule", "Rule checker", "code", "Unusual rules answered from cache", f"{n_unknown} rule(s), 0 model calls")
+    t_ = steps.timed()
     plan, checks, notes, status, facts, _ = engine.plan_with_rejections(state["messages"], {}, mres)
+    loop_ms = t_()
     apply_statuses(state, status, facts, run_no, old_status)
+    counts = {}
+    for res_ in status.values():
+        counts[res_[0]] = counts.get(res_[0], 0) + 1
+    steps.add("resolve", "Resolver", "code", "Newest wins, authority checked",
+              ", ".join(f"{k} {v}" for k, v in sorted(counts.items())) or "no facts")
+    pv, pf, pj, pb = plan.get("venue") or {}, plan.get("food") or {}, plan.get("judging") or {}, plan.get("budget") or {}
+    steps.add("plan", "Planner", "code", "Best plan over every option",
+              f"venue {pv.get('name')}, food {pf.get('name')}, {pj.get('used')} judges, total {pb.get('total')} "
+              f"({len(pv.get('options') or [])} venue and {len(pf.get('options') or [])} food options tried; "
+              f"resolve + plan + validate + reject took {loop_ms} ms)", ms=loop_ms)
+    failing_ = [c["label"] for c in checks if not c["ok"]]
+    steps.add("validate", "Validator", "code", f"{len(checks) - len(failing_)}/{len(checks)} checks pass",
+              ("failing: " + "; ".join(failing_)) if failing_ else "every rule satisfied")
+    steps.add("reject", "Rejector", "code", f"{len(state['rejected'])} message(s) rejected",
+              "; ".join(f"#{r['n']} {r.get('sender')}: {str(r['reason'])[:90]}" for r in state["rejected"]) or "no message broke a rule")
 
     plan_diff = diff.plan_changes(state["plan"], plan)
+    steps.add("diff", "Change tracker", "code", f"{len(plan_diff)} plan value(s) changed",
+              ", ".join(sorted({c["area"] for c in plan_diff})) or "no change")
     state["plan"], state["checks"], state["decisions"] = plan, checks, notes
     new_sections = engine.area_sections(plan)
     changed = [a for a in engine.AREAS if old_sections.get(a) != new_sections.get(a)]
@@ -140,6 +186,7 @@ def run(path):
                        "completion": sum((c.get("completion_tokens") or 0) for c in all_calls),
                        "total": sum((c.get("total_tokens") or 0) for c in all_calls)}
     state["updated"] = datetime.now().isoformat(timespec="seconds")
+    steps.add("save", "Saver", "io", "Plan, trace and state saved", "out/state.json, out/trace.txt, out/plan.md")
     save(state)
     report.print_run(state, run_no)
     return state
