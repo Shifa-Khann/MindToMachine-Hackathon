@@ -9,7 +9,7 @@ import json
 import time
 from datetime import datetime
 
-from . import config, engine, ingest, reading, report
+from . import config, diff, engine, ingest, reading, report
 from .llm import LLM, parse_json, CallBudgetExceeded
 
 AREA_CHECK_SYSTEM = ("You check one event-plan rule. Reply ONLY JSON: "
@@ -122,6 +122,7 @@ def run(path):
     plan, checks, notes, status, facts, _ = engine.plan_with_rejections(state["messages"], {}, mres)
     apply_statuses(state, status, facts, run_no, old_status)
 
+    plan_diff = diff.plan_changes(state["plan"], plan)
     state["plan"], state["checks"], state["decisions"] = plan, checks, notes
     new_sections = engine.area_sections(plan)
     changed = [a for a in engine.AREAS if old_sections.get(a) != new_sections.get(a)]
@@ -131,7 +132,7 @@ def run(path):
                           "started": datetime.now().isoformat(timespec="seconds"), "calls": len(run_calls),
                           "tokens": {"prompt": tok("prompt_tokens"), "completion": tok("completion_tokens"),
                                      "total": tok("total_tokens")},
-                          "call_areas": sorted({c["area"] for c in run_calls}), "changed_areas": changed,
+                          "call_areas": sorted({c["area"] for c in run_calls}), "changed_areas": changed, "changes": plan_diff,
                           "new_messages": new_ns, "duration_ms": int((time.time() - t0) * 1000)})
     all_calls = state["trace"]
     state["totals"] = {"calls": len(all_calls),

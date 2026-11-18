@@ -244,3 +244,5 @@ html[dir="rtl"] .brief{border-left:1px solid var(--line);border-right:5px solid 
 .brbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 22px;margin-top:10px}
 .brsec h4{margin:8px 0 4px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .brsec ul{margin:0;padding-inline-start:18px;font-size:.86rem}.brsec li{margin-bottom:3px}
+.brsec.latest{grid-column:1/-1;background:color-mix(in srgb,var(--purple) 10%,transparent);border-radius:12px;padding:6px 14px 8px}
+.brsec.latest h4{color:var(--purple)}
