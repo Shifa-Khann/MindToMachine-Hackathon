@@ -95,6 +95,12 @@ function drawAttach() {
   $("attachList").innerHTML = ATTACH.map((f, i) => `<span class="chip">${esc(f.name)} <button class="x" data-i="${i}" aria-label="remove">×</button></span>`).join("");
 }
 $("attachList").addEventListener("click", (e) => { const b = e.target.closest("button.x"); if (b) { ATTACH.splice(+b.dataset.i, 1); drawAttach(); } });
+const menu = $("attachMenu");
+const setMenu = (open) => { menu.classList.toggle("hidden", !open); $("attachBtn").setAttribute("aria-expanded", String(open)); };
+$("attachBtn").addEventListener("click", (e) => { e.stopPropagation(); setMenu(menu.classList.contains("hidden")); });
+$("attachPick").addEventListener("click", () => { setMenu(false); $("attachInput").click(); });
+document.addEventListener("click", (e) => { if (!menu.contains(e.target)) setMenu(false); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") setMenu(false); });
 $("attachInput").addEventListener("change", (e) => { addAttachments(e.target.files); e.target.value = ""; });
 const addCard = $("addCard");
 ["dragover", "dragenter", "drop"].forEach(ev => addCard.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); if (ev === "drop") addAttachments(e.dataTransfer.files); }));
