@@ -62,7 +62,10 @@ No dependencies for the core (Python 3.10+ standard library). `pip install -r re
 | `eventmind/report.py` | Terminal output, trace.txt, plan.md |
 | `serve.py` | Serves UI; "add message" runs the same command |
 | `ui/` | Standalone dashboard (vanilla HTML/JS/CSS, no build step) |
-| `docs/` | Architecture, judge Q&A, prediction slip, test-day checklist |
+| `docs/` | IDEA, PRD, TRD, CONTEXT, ARCHITECTURE, PROGRESS, RULES, JUDGE_QA, TEST_DAY |
+| `AGENTS.md` | Rules for AI assistants + the system's agents |
+| `SECURITY.md` | Secrets, privacy, untrusted input |
+| `scripts/ship.sh` | Test → commit → push after each finished functionality |
 
 ## Team
 | Member | Owns | Must also be able to explain |
