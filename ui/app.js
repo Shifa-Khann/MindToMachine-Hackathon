@@ -73,7 +73,7 @@ function readFile(f) {
 async function poll() {
   try {
     const res = await fetch("/state.json?t=" + Date.now(), {cache: "no-store"});
-    if (res.ok) { const s = await res.json(); LIVE = true; if (s.updated !== lastUpdated) { lastUpdated = s.updated; load(s, ""); } }
+    if (res.ok) { const s = await res.json(); LIVE = true; const key = s.updated || "empty"; if (key !== lastUpdated) { lastUpdated = key; load(s, ""); } }
   } catch (_) { /* standalone mode */ }
 }
 poll(); setInterval(poll, 3000);
@@ -243,12 +243,20 @@ function render() {
   $("decisions").innerHTML = (s.decisions || []).map(d => `<li>${esc(d)}</li>`).join("") || `<li class="muted">${t("none")}</li>`;
   $("privacy").innerHTML = (s.privacy || []).map(d => `<li>${esc(d)}</li>`).join("") || `<li class="muted">${t("privacy.none")}</li>`;
 
+  applyVisibility(s);
   renderLangs(s.messages || []); renderMessages(s.messages || []); renderRejected(s.rejected || []); renderTrace(s); renderHistory(runs);
 }
 
+function chartHas(p) {
+  return {budget: (p.budget?.lines || []).length > 0, schedule: (p.schedule?.blocks || []).length > 0,
+          venues: (p.venue?.options || []).length > 0, food: (p.food?.options || []).length > 0};
+}
 function renderBars() {
   if (!STATE) return;
-  const p = STATE.plan || {};
+  const p = STATE.plan || {}, has = chartHas(p);
+  document.querySelectorAll("#barTabs button").forEach(b => b.classList.toggle("hidden", !has[b.dataset.chart]));
+  if (!has[CHART]) CHART = Object.keys(has).find(k => has[k]) || CHART;
+  document.querySelectorAll("#barTabs button").forEach(b => b.classList.toggle("active", b.dataset.chart === CHART));
   let items = [], fmt = rs, note = "";
   if (CHART === "budget") {
     items = (p.budget?.lines || []).map(l => ({label: title(l.item.replace(/^(Venue|Food|Judges): /, "")), value: l.amount}));
@@ -379,3 +387,37 @@ function renderLangs(msgs) {
     : rows.map(([c, n]) => `<div class="langrow">${langBadge(c)}<span class="lname">${esc(langName(c))}</span>
         <span class="lbar"><i style="width:${100 * n / max}%"></i></span><b>${n}</b></div>`).join("");
 }
+
+// Dynamic page: a section is shown only when the user's input produced data for it.
+function applyVisibility(s) {
+  const p = s.plan || {}, msgs = s.messages || [], has = chartHas(p);
+  const sec = {
+    venue: p.venue?.name || (p.venue?.options || []).length, food: p.food?.name || (p.food?.options || []).length,
+    judging: p.judging?.teams, schedule: (p.schedule?.blocks || []).length, budget: p.budget?.cap || (p.budget?.lines || []).length
+  };
+  const anyPlan = Object.values(sec).some(Boolean);
+  const show = (id, on) => { const c = $(id)?.closest(".card"); if (c) c.classList.toggle("hidden", !on); };
+  show("venue", sec.venue); show("food", sec.food); show("judging", sec.judging); show("schedule", sec.schedule); show("budget", sec.budget);
+  show("barChart", Object.values(has).some(Boolean));
+  show("msgDonut", msgs.length); show("langs", msgs.length);
+  show("headBars", p.headcount?.total > 0);
+  show("checkDonut", anyPlan); show("checks", anyPlan);
+  show("gauge", p.budget?.cap); show("tokTotal", (s.totals?.calls || 0) > 0);
+  show("decisions", msgs.length);
+  document.querySelector("#tab-overview .hero").classList.toggle("hidden", !msgs.length);
+  $("planEmpty").classList.toggle("hidden", msgs.length > 0);
+  document.querySelectorAll("#tab-overview .grid-main, #tab-overview .grid-4, #tab-overview .grid-3, #tab-overview .grid-2").forEach(g =>
+    g.classList.toggle("hidden", [...g.children].every(c => c.classList.contains("hidden") || (!c.classList.contains("card") && [...c.querySelectorAll(".card")].every(x => x.classList.contains("hidden"))))));
+}
+$("peAdd").addEventListener("click", () => { showTab("messages"); $("newMsg").focus(); });
+
+// New event: clears the saved plan on the server (a backup copy is kept) so the page starts blank.
+$("newBtn").addEventListener("click", async () => {
+  if (!confirm(t("new.confirm"))) return;
+  try {
+    const res = await fetch("/api/reset", {method: "POST"}); const out = await res.json();
+    if (!out.ok) { alert(t("msg.error", {e: out.error || "see terminal"})); return; }
+    $("resultCard").classList.add("hidden"); ATTACH = []; drawAttach(); $("newMsg").value = "";
+    lastUpdated = null; await poll(); showTab("overview");
+  } catch (_) { alert(t("msg.nobackend")); }
+});

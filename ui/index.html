@@ -41,6 +41,7 @@
         <div id="langSwitch" class="langswitch" role="group" aria-label="Language"><button data-lang="en" lang="en">English</button><button data-lang="ur" lang="ur">اردو</button></div>
         <span id="conn" class="chip" data-i18n="conn.none">no data</span>
         <label class="btn"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg><span data-i18n="btn.open">Open saved plan</span><input id="fileInput" type="file" accept=".json" hidden></label>
+        <button id="newBtn" class="btn"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg><span data-i18n="btn.new">New event</span></button>
         <button id="downloadBtn" class="btn"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-i18n="btn.excel">Download Excel</span></button>
         <button id="addBtn" class="btn btn-dark"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="btn.message">Message</span></button>
       </div>
@@ -55,6 +56,11 @@
 
     <!-- PLAN -->
     <section id="tab-overview" class="tab hidden">
+      <div id="planEmpty" class="card hidden">
+        <h2 data-i18n="pe.title">Your plan is empty</h2>
+        <p class="muted" data-i18n="pe.text">Add a message, email or document and the plan builds itself. Each section (venue, food, judging, schedule, budget, charts) appears only when your input contains that information.</p>
+        <button id="peAdd" class="btn btn-dark" type="button" data-i18n="pe.add">Add a message</button>
+      </div>
       <div class="card hero">
         <div class="hero-top">
           <div>

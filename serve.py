@@ -8,6 +8,7 @@ import base64
 import json
 import subprocess
 import sys
+import shutil
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -38,8 +39,9 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/state.json"):
             f = OUT / "state.json"
-            body = f.read_bytes() if f.exists() else b"{}"
-            self.send_response(200 if f.exists() else 404)
+            from eventmind import runner     # no saved plan yet -> an empty one, so the page starts blank and fills from input
+            body = f.read_bytes() if f.exists() else json.dumps({**runner.new_state(), "empty": True}).encode()
+            self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
@@ -48,6 +50,17 @@ class Handler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self):
+        if self.path == "/api/reset":                     # "New event": keep a backup copy, then clear the saved plan
+            f = OUT / "state.json"
+            if f.exists():
+                INBOX.mkdir(exist_ok=True)
+                shutil.copy2(f, INBOX / f"state_backup_{int(time.time())}.json")
+            ok, err = run_file("reset")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": ok, "error": err}).encode())
+            return
         if self.path != "/api/message":
             self.send_error(404)
             return

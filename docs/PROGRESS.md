@@ -19,6 +19,7 @@ Update this file and **push after every finished functionality** (see RULES.md).
 | 9d | Offline Excel export (`ui/xlsx.js`, 10 sheets), "Open saved plan", display-time title case, `scripts/package.*`, ship.sh tracked-file check | ✅ done | |
 | 9e | Attach email/document to "Add message": .eml (stdlib reader), .docx, .pdf, .txt; served via /api/message, same command | ✅ done | |
 | 9f | Result panel after each message + follow-up questions (model `ask` + code-detected missing numbers), answer box sends a reply message | ✅ done | |
+| 9g | Dynamic page: starts empty, "New event" button (backup kept), sections/charts appear only when input has that data | ✅ done | |
 | 10 | Real model run on sample pack (< 2 min, JSON parses) | ⏳ todo | |
 | 11 | Multilingual test with `data/invented_multilingual_pack.txt` | ⏳ todo | |
 | 12 | Push to GitHub, add organizers if private | ⏳ todo (GitHub not linked yet) | |
