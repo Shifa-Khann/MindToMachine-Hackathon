@@ -41,7 +41,8 @@ class LLM:
             body["response_format"] = {"type": "json_object"}
         req = urllib.request.Request(
             config.BASE_URL + "/chat/completions", data=json.dumps(body).encode("utf-8"),
-            headers={"Content-Type": "application/json", "Authorization": f"Bearer {config.API_KEY}"})
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {config.API_KEY}",
+                     "User-Agent": "eventmind-client/1.0"})   # default Python UA is blocked by some gateways (HTTP 403 / 1010)
         t0 = time.time()
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as r:

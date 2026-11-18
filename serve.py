@@ -21,8 +21,11 @@ MAX_BYTES = 10 * 1024 * 1024
 def run_file(path):
     p = subprocess.run([sys.executable, str(ROOT / "eventmind.py"), str(path)], cwd=ROOT,
                        capture_output=True, text=True, encoding="utf-8", timeout=90)
-    print(p.stdout, p.stderr)
-    return p.returncode == 0, (p.stderr[-400:] if p.returncode else None)
+    out = (p.stdout or "") + (p.stderr or "")
+    print(out.encode("ascii", "replace").decode())          # a Windows console can't print every character
+    if "Reading failed" in out:                             # eventmind.py exits 0 but the plan did not change
+        return False, out[out.index("Reading failed"):][:300]
+    return p.returncode == 0, (out[-400:] if p.returncode else None)
 
 
 class Handler(SimpleHTTPRequestHandler):

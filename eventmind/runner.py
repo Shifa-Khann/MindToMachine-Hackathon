@@ -90,11 +90,12 @@ def run(path):
             state["privacy"].append(f"Run {run_no}: {n}")
             state["events"].append({"run": run_no, "kind": "privacy", "text": n})
         known = {f["key"] for f in engine.flatten(state["messages"])}
+        read_failed = False
         try:
             msgs = reading.read(llm, safe_text, known, is_update)
         except Exception as e:
-            print(f"\n!! Reading failed: {e}\n   Plan left unchanged.")
-            msgs = []
+            print(f"\n!! Reading failed: {e}\n   Plan left unchanged. Run the same command again to retry.")
+            msgs, read_failed = [], True
         msgs = reading.attach_original_text(msgs, safe_text)
         for m in msgs:
             m["n"] = len(state["messages"]) + 1
@@ -107,7 +108,8 @@ def run(path):
                 state["privacy"].append(f"Message #{m['n']} flagged {'/'.join(m['flags'])} - not applied, needs human review.")
             state["messages"].append(m)
             new_ns.append(m["n"])
-        state["raw_seen"].append({"sha": hashlib.sha256(raw.encode()).hexdigest(), "text": raw})
+        if not read_failed:                 # a failed read must stay "new" so the next run retries it
+            state["raw_seen"].append({"sha": hashlib.sha256(raw.encode()).hexdigest(), "text": raw})
     else:
         print("No new messages in this file - plan unchanged, 0 model calls.")
 
