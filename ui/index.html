@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EventMind — Hackathon Planner</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">◆</span> EventMind <small>message pack → valid event plan</small></div>
+  <div class="status">
+    <span id="conn" class="pill pill-muted">no data</span>
+    <span id="health" class="pill pill-muted">—</span>
+    <label class="btn btn-ghost">Load state.json<input id="fileInput" type="file" accept=".json" hidden></label>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="overview" class="active">Plan</button>
+  <button data-tab="messages">Messages</button>
+  <button data-tab="rejected">Rejected <span id="rejCount" class="count">0</span></button>
+  <button data-tab="trace">Trace</button>
+  <button data-tab="history">Runs &amp; changes</button>
+</nav>
+
+<main>
+  <!-- empty state -->
+  <section id="empty" class="empty">
+    <h2>No plan loaded yet</h2>
+    <p>Run <code>python eventmind.py data/pack.txt</code>, then open <code>python serve.py</code> at
+      <code>http://localhost:8000</code> — or drop an <code>out/state.json</code> file here.</p>
+    <div id="dropzone" class="dropzone">Drop state.json here</div>
+  </section>
+
+  <!-- PLAN -->
+  <section id="tab-overview" class="tab hidden">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2">
+      <div class="card"><h3>Validation checks</h3><div id="checks"></div></div>
+      <div class="card"><h3>Budget</h3><div id="budget"></div></div>
+    </div>
+    <div class="grid3">
+      <div class="card" data-area="venue"><h3>Venue</h3><div id="venue"></div></div>
+      <div class="card" data-area="food"><h3>Food</h3><div id="food"></div></div>
+      <div class="card" data-area="judging"><h3>Judging</h3><div id="judging"></div></div>
+    </div>
+    <div class="card" data-area="schedule"><h3>Schedule</h3><div id="schedule"></div></div>
+    <div class="grid2">
+      <div class="card"><h3>Decisions needing a human</h3><ul id="decisions" class="notes"></ul></div>
+      <div class="card"><h3>Privacy &amp; safety notes</h3><ul id="privacy" class="notes"></ul></div>
+    </div>
+  </section>
+
+  <!-- MESSAGES -->
+  <section id="tab-messages" class="tab hidden">
+    <div class="card">
+      <h3>Add a new message</h3>
+      <p class="muted">Sent to the same command as every other message. Needs <code>python serve.py</code> running.</p>
+      <textarea id="newMsg" rows="3" placeholder="Paste a new message in any language…"></textarea>
+      <div class="row"><button id="sendMsg" class="btn">Process message</button><span id="sendStatus" class="muted"></span></div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div id="messages"></div>
+  </section>
+
+  <!-- REJECTED -->
+  <section id="tab-rejected" class="tab hidden">
+    <div id="rejected"></div>
+  </section>
+
+  <!-- TRACE -->
+  <section id="tab-trace" class="tab hidden">
+    <div class="kpis" id="traceKpis"></div>
+    <div class="row filters">
+      <select id="traceRun"><option value="">All runs</option></select>
+      <select id="traceArea"><option value="">All areas</option></select>
+    </div>
+    <div id="trace"></div>
+    <div class="card"><h3>Decision log (reasons printed in trace)</h3><div id="events"></div></div>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="tab-history" class="tab hidden">
+    <div id="history"></div>
+  </section>
+</main>
+
+<footer class="foot">EventMind · reads messages with a model, plans with plain code · <span id="updated"></span></footer>
+<script src="app.js"></script>
+</body>
+</html>

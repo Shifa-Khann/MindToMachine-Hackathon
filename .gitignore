@@ -1,0 +1,11 @@
+# runtime output (state, trace, plan) - never commit, keeps `git status` clean on test day
+out/
+inbox/
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+.idea/
+.vscode/
