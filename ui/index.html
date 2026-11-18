@@ -145,14 +145,30 @@
           <div class="menu-wrap">
             <button id="attachBtn" class="btn" type="button" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M20 11.5l-8 8a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg><span data-i18n="msg.attach">Attach</span></button>
             <div id="attachMenu" class="menu hidden" role="menu">
+              <button id="menuEmail" class="menu-item" type="button" role="menuitem">
+                <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+                <b data-i18n="msg.menuEmail">Add email</b><span data-i18n="msg.menuEmailDesc">Paste or upload — no account needed</span>
+              </button>
               <button id="attachPick" class="menu-item" type="button" role="menuitem">
-                <svg viewBox="0 0 24 24"><path d="M20 11.5l-8 8a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg>
-                <b data-i18n="msg.menuTitle">Add email or document</b><span data-i18n="msg.menuDesc">Upload from computer</span>
+                <svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                <b data-i18n="msg.menuTitle">Add document</b><span data-i18n="msg.menuDesc">Upload from computer</span>
               </button>
             </div>
           </div>
           <input id="attachInput" type="file" multiple accept=".eml,.txt,.md,.csv,.json,.docx,.pdf" hidden>
+          <input id="emlInput" type="file" accept=".eml" hidden>
           <span class="muted small" data-i18n="msg.attachhint">Email (.eml), Word, PDF or text — up to 10 MB each</span>
+        </div>
+        <div id="emailForm" class="emailform hidden">
+          <div class="grid-2e">
+            <label><span class="muted small" data-i18n="em.from">From</span><input id="emFrom" type="text"></label>
+            <label><span class="muted small" data-i18n="em.date">Date</span><input id="emDate" type="text" placeholder="YYYY-MM-DD"></label>
+          </div>
+          <label><span class="muted small" data-i18n="em.subject">Subject</span><input id="emSubject" type="text"></label>
+          <label><span class="muted small" data-i18n="em.body">Email text</span><textarea id="emBody" rows="4"></textarea></label>
+          <div class="row"><button id="emAdd" type="button" class="btn btn-dark" data-i18n="em.add">Add to message</button>
+            <button id="emUpload" type="button" class="btn" data-i18n="em.upload">Upload .eml file</button>
+            <button id="emCancel" type="button" class="btn" data-i18n="em.cancel">Cancel</button></div>
         </div>
         <div id="attachList" class="chips"></div>
         <div class="row"><button id="sendMsg" class="btn btn-dark" data-i18n="btn.process">Process message</button><span id="sendStatus" class="muted small"></span></div>

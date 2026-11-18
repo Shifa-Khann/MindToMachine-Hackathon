@@ -218,3 +218,10 @@ html[dir="rtl"] .msg.s-irrelevant{border-right-color:var(--blue)}html[dir="rtl"]
 .menu-item svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--muted)}
 .menu-item b{font-weight:600}
 .menu-item span{color:var(--muted);font-size:.84rem}
+
+.emailform{background:var(--frame);border-radius:14px;padding:12px;margin:0 0 10px}
+.emailform label{display:block;margin-bottom:8px}
+.emailform input{width:100%;background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit}
+.emailform textarea{margin:0}
+.grid-2e{display:grid;grid-template-columns:2fr 1fr;gap:10px}
+@media(max-width:600px){.grid-2e{grid-template-columns:1fr}}

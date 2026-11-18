@@ -101,6 +101,19 @@ $("attachBtn").addEventListener("click", (e) => { e.stopPropagation(); setMenu(m
 $("attachPick").addEventListener("click", () => { setMenu(false); $("attachInput").click(); });
 document.addEventListener("click", (e) => { if (!menu.contains(e.target)) setMenu(false); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") setMenu(false); });
+// "Add email": no account or connection - paste the email's parts (or upload an .eml); it joins the message box as plain text.
+const setEmail = (open) => { $("emailForm").classList.toggle("hidden", !open); if (open) $("emFrom").focus(); };
+$("menuEmail").addEventListener("click", () => { setMenu(false); setEmail(true); });
+$("emCancel").addEventListener("click", () => setEmail(false));
+$("emUpload").addEventListener("click", () => $("emlInput").click());
+$("emlInput").addEventListener("change", (e) => { addAttachments(e.target.files); e.target.value = ""; setEmail(false); });
+$("emAdd").addEventListener("click", () => {
+  const f = {From: $("emFrom").value.trim(), Date: $("emDate").value.trim(), Subject: $("emSubject").value.trim()}, body = $("emBody").value.trim();
+  if (!body) { $("emBody").focus(); return; }
+  const NL = String.fromCharCode(10), head = Object.entries(f).filter(([, v]) => v).map(([k, v]) => k + ": " + v).join(NL);
+  const box = $("newMsg"); box.value = (box.value.trim() ? box.value.trim() + NL + NL : "") + (head ? head + NL + NL : "") + body;
+  ["emFrom", "emDate", "emSubject", "emBody"].forEach(id => $(id).value = ""); setEmail(false); box.focus();
+});
 $("attachInput").addEventListener("change", (e) => { addAttachments(e.target.files); e.target.value = ""; });
 const addCard = $("addCard");
 ["dragover", "dragenter", "drop"].forEach(ev => addCard.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); if (ev === "drop") addAttachments(e.dataTransfer.files); }));
